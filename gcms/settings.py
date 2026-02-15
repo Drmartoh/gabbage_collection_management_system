@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'collection_records',
     'billing',
     'incidents',
-    'notifications',
+    'notifications.app_config.NotificationsConfig',
     'reports',
 ]
 

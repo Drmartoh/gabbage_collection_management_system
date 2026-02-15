@@ -434,6 +434,26 @@ python manage.py test accounts.tests billing.tests notifications.tests
 
 ## 13. Deployment Notes
 
+### Generating a SECRET_KEY
+
+Never use a default or guessable value in production. Generate a new key and put it in `.env` as `SECRET_KEY=...`.
+
+**Option 1 (Django):** Run in your project environment (with Django installed):
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+**Option 2 (Python only):**
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+```
+
+Copy the printed string into your `.env` file, e.g. `SECRET_KEY=django-insecure-abc123...` or `SECRET_KEY=xyz789...`.
+
+---
+
 - Set **DEBUG=False**, strong **SECRET_KEY**, and **ALLOWED_HOSTS**.
 - Use **PostgreSQL** (or another production DB) via **DATABASE_URL**.
 - Configure **EMAIL_*** for password reset and any other emails.
@@ -442,7 +462,7 @@ python manage.py test accounts.tests billing.tests notifications.tests
 - **SESSION_COOKIE_SECURE** and **CSRF_COOKIE_SECURE** true over HTTPS.
 - Run **migrate** and **collectstatic**; use a production WSGI/ASGI server (e.g. Gunicorn + Nginx or PythonAnywhere).
 
-**PythonAnywhere:** Clone the repo, create virtualenv, `pip install -r requirements.txt`, copy `.env.example` to `.env` and set `ALLOWED_HOSTS=yourusername.pythonanywhere.com`, `DEBUG=False`, secure cookies. Run `migrate`, `collectstatic`, `createsuperuser`. In the Web tab set project path, virtualenv, and WSGI to Django (`gcms.wsgi`); add static URL `/static/` → `staticfiles`, `/media/` → `media`. Reload. See repo README or this doc for full steps.
+**PythonAnywhere:** Clone the repo, create virtualenv, `pip install -r requirements.txt`, copy `.env.example` to `.env` and set `ALLOWED_HOSTS=gcmskarai.pythonanywhere.com` (or your PA subdomain), `DEBUG=False`, secure cookies. Generate `SECRET_KEY` as above. Run `migrate`, `collectstatic`, `createsuperuser`. In the Web tab set project path, virtualenv, and WSGI to Django (`gcms.wsgi`); add static URL `/static/` → `staticfiles`, `/media/` → `media`. Reload. See repo README or this doc for full steps.
 
 ---
 

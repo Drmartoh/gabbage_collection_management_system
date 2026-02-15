@@ -19,12 +19,28 @@ pip install -r requirements.txt
 
 ## 3. Environment variables
 
-Create a `.env` file in the project root (`~/gcms_project/.env`):
+Create a `.env` file in the project root (e.g. `~/gabbage_collection_management_system/.env` or `~/gcms_project/.env`).
+
+**Generate a SECRET_KEY** (run once, then paste the output into `.env`):
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+Or with Python only (no Django needed yet):
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+```
+
+Example `.env` for **gcmskarai.pythonanywhere.com**:
 
 ```bash
 DEBUG=False
-SECRET_KEY=your-long-random-secret-key-here
-ALLOWED_HOSTS=yourusername.pythonanywhere.com
+SECRET_KEY=paste-the-generated-key-here
+ALLOWED_HOSTS=gcmskarai.pythonanywhere.com
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
 ```
 
 For MySQL (optional, free tier):
@@ -48,32 +64,43 @@ python manage.py collectstatic --noinput
 
 ## 5. Web app configuration
 
-- In the PythonAnywhere **Web** tab:
-  - **WSGI configuration file**: edit it and set the path to your project and virtualenv, for example:
+In the PythonAnywhere **Web** tab, set the following. Replace the project folder name if you used something other than `gabbage_collection_management_system` (e.g. if you cloned into `gcms_project`).
+
+| Field | Value |
+|-------|--------|
+| **Source code** | `/home/gcmskarai/gabbage_collection_management_system` |
+| **Working directory** | `/home/gcmskarai/gabbage_collection_management_system` (same as source; must contain `manage.py`) |
+| **WSGI configuration file** | `/var/www/gcmskarai_pythonanywhere_com_wsgi.py` (PA sets this; you only edit its contents) |
+| **Virtualenv** | `/home/gcmskarai/.virtualenvs/gcms` (if you used `mkvirtualenv gcms`) or `/home/gcmskarai/gabbage_collection_management_system/venv` (if you used a venv inside the project) |
+
+**Edit the WSGI file** (click the path to open it). Replace the entire file with:
 
 ```python
 import os
 import sys
-path = '/home/yourusername/gcms_project'
+
+path = '/home/gcmskarai/gabbage_collection_management_system'
 if path not in sys.path:
     sys.path.insert(0, path)
+
 os.environ['DJANGO_SETTINGS_MODULE'] = 'gcms.settings'
+
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 ```
 
-  - **Virtualenv**: set to `/home/yourusername/gcms_project/venv`
-  - **Static files** (optional; Whitenoise also serves static):
-    - URL: `/static/`
-    - Directory: `/home/yourusername/gcms_project/staticfiles`
-  - **Static files** for uploads:
-    - URL: `/media/`
-    - Directory: `/home/yourusername/gcms_project/media`
+If your project is in a different folder (e.g. `/home/gcmskarai/gcms_project`), change `path` in the WSGI file and in the Source code / Working directory fields to that path.
+
+**Static files** (in the same Web tab, scroll to "Static files"):
+| URL | Directory |
+|-----|-----------|
+| `/static/` | `/home/gcmskarai/gabbage_collection_management_system/staticfiles` |
+| `/media/` | `/home/gcmskarai/gabbage_collection_management_system/media` |
 
 ## 6. Reload and test
 
 - Click **Reload** for your web app.
-- Open `https://yourusername.pythonanywhere.com/`, log in, and assign yourself a role in Django Admin (`/admin/`).
+- Open **https://gcmskarai.pythonanywhere.com/** (or your PA URL), log in, and assign yourself a role in Django Admin (`/admin/`).
 
 ## 7. HTTPS / cookies (production)
 
