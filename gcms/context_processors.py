@@ -14,14 +14,30 @@ def _get_here_api_key():
     return getattr(settings, 'HERE_API_KEY', '') or ''
 
 
+def _get_branding_paths():
+    """Logo and favicon paths (relative to MEDIA) from SystemSetting."""
+    try:
+        from core.models import SystemSetting
+        logo = (SystemSetting.get_value('site_logo', '') or '').strip()
+        favicon = (SystemSetting.get_value('site_favicon', '') or '').strip()
+        return logo, favicon
+    except Exception:
+        pass
+    return '', ''
+
+
 def gcms_settings(request):
     """Expose GCMS settings to templates (non-sensitive only)."""
+    logo_path, favicon_path = _get_branding_paths()
     return {
         'GCMS_RATE_PER_TENANT': getattr(settings, 'GCMS_RATE_PER_TENANT_MONTHLY', 100),
         'GCMS_SITE_NAME': 'Garbage Collection Management System',
         'GCMS_WARD': 'Karai Ward',
         'GCMS_COUNTY': 'Kiambu County',
         'HERE_API_KEY': _get_here_api_key(),
+        'GCMS_LOGO_PATH': logo_path,
+        'GCMS_FAVICON_PATH': favicon_path,
+        'MEDIA_URL': getattr(settings, 'MEDIA_URL', 'media/'),
     }
 
 

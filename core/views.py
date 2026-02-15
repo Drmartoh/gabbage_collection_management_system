@@ -74,6 +74,47 @@ def gcms_settings_page(request):
             SystemSetting.set_value('sms_sender_id', sender or 'GCMS', 'SMS sender ID')
             messages.success(request, 'SMS settings saved.')
             return redirect('core:gcms_settings')
+        # Logo / favicon upload or clear
+        if 'clear_logo' in request.POST or 'clear_favicon' in request.POST or request.FILES.get('logo_file') or request.FILES.get('favicon_file'):
+            from django.core.files.storage import default_storage
+            import os
+            media_root = getattr(django_settings, 'MEDIA_ROOT', None)
+            branding_dir = media_root and os.path.join(media_root, 'branding')
+            allowed_images = ('image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon')
+            if request.POST.get('clear_logo'):
+                SystemSetting.set_value('site_logo', '', 'Site logo (navbar, login)')
+                messages.success(request, 'Logo cleared.')
+            if request.POST.get('clear_favicon'):
+                SystemSetting.set_value('site_favicon', '', 'Browser favicon')
+                messages.success(request, 'Favicon cleared.')
+            logo_file = request.FILES.get('logo_file')
+            if logo_file and logo_file.content_type in allowed_images and branding_dir:
+                os.makedirs(branding_dir, exist_ok=True)
+                ext = os.path.splitext(logo_file.name)[1] or '.png'
+                if ext.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico'):
+                    ext = '.png'
+                path = os.path.join('branding', f'logo{ext}')
+                full_path = os.path.join(media_root, path)
+                with open(full_path, 'wb') as f:
+                    for chunk in logo_file.chunks():
+                        f.write(chunk)
+                SystemSetting.set_value('site_logo', path.replace('\\', '/'), 'Site logo (navbar, login)')
+                messages.success(request, 'Logo updated.')
+            favicon_file = request.FILES.get('favicon_file')
+            if favicon_file and favicon_file.content_type in allowed_images and branding_dir:
+                os.makedirs(branding_dir, exist_ok=True)
+                ext = os.path.splitext(favicon_file.name)[1] or '.ico'
+                if ext.lower() not in ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico'):
+                    ext = '.ico'
+                path = os.path.join('branding', f'favicon{ext}')
+                full_path = os.path.join(media_root, path)
+                with open(full_path, 'wb') as f:
+                    for chunk in favicon_file.chunks():
+                        f.write(chunk)
+                SystemSetting.set_value('site_favicon', path.replace('\\', '/'), 'Browser favicon')
+                messages.success(request, 'Favicon updated.')
+            if 'clear_logo' in request.POST or 'clear_favicon' in request.POST or logo_file or favicon_file:
+                return redirect('core:gcms_settings')
 
     walkthrough_enabled = SystemSetting.get_value('walkthrough_enabled', 'true').lower() in ('true', '1', 'yes')
     rate_from_setting = SystemSetting.get_value('billing_rate_per_tenant', '')
@@ -94,6 +135,8 @@ def gcms_settings_page(request):
         'sms_api_url': sms_url,
         'sms_api_key': sms_key,
         'sms_sender_id': sms_sender,
+        'site_logo_path': SystemSetting.get_value('site_logo', ''),
+        'site_favicon_path': SystemSetting.get_value('site_favicon', ''),
         'session_hours': getattr(django_settings, 'SESSION_COOKIE_AGE', 28800) // 3600,
         'walkthrough_enabled': walkthrough_enabled,
         'breadcrumbs': [

@@ -36,6 +36,38 @@
   </div>
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
+      <div class="card-header"><i class="bi bi-image me-2"></i> Logo &amp; Favicon</div>
+      <div class="card-body">
+        <p class="small text-muted mb-2">Logo appears in the navbar and login page. Favicon is the browser tab icon. Use PNG, JPG, GIF, SVG or ICO.</p>
+        <form method="post" action="{% url 'core:gcms_settings' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Logo</label>
+            {% if site_logo_path %}
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <img src="{{ MEDIA_URL }}{{ site_logo_path }}" alt="Logo" style="max-height:40px;max-width:120px;object-fit:contain">
+                <label class="mb-0"><input type="checkbox" name="clear_logo" value="1"> Clear</label>
+              </div>
+            {% endif %}
+            <input type="file" name="logo_file" class="form-control form-control-sm" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/x-icon,image/vnd.microsoft.icon">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Favicon</label>
+            {% if site_favicon_path %}
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <img src="{{ MEDIA_URL }}{{ site_favicon_path }}" alt="Favicon" style="max-height:24px;max-width:24px;object-fit:contain">
+                <label class="mb-0"><input type="checkbox" name="clear_favicon" value="1"> Clear</label>
+              </div>
+            {% endif %}
+            <input type="file" name="favicon_file" class="form-control form-control-sm" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/x-icon,image/vnd.microsoft.icon">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
       <div class="card-header"><i class="bi bi-currency-exchange me-2"></i> Standard fee (billing)</div>
       <div class="card-body">
         <p class="small text-muted mb-2">Default monthly rate per tenant (KES). You can override this for individual tenants when adding or editing a tenant.</p>

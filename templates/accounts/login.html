@@ -5,7 +5,11 @@
   <div class="col-11 col-sm-10 col-md-6 col-lg-5">
     <div class="text-center mb-4 gcms-animate-in" style="animation-delay: 0.05s">
       <div class="login-logo d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary mb-3" style="width:80px;height:80px">
-        <i class="bi bi-recycle" style="font-size:2.25rem"></i>
+        {% if GCMS_LOGO_PATH %}
+          <img src="{{ MEDIA_URL }}{{ GCMS_LOGO_PATH }}" alt="{{ GCMS_SITE_NAME }}" style="max-width:64px;max-height:64px;object-fit:contain">
+        {% else %}
+          <i class="bi bi-recycle" style="font-size:2.25rem"></i>
+        {% endif %}
       </div>
       <h1 class="fw-bold mb-1" style="color:var(--gcms-text);font-size:1.85rem">😊 Welcome back</h1>
       <p class="text-muted mb-0">{{ GCMS_SITE_NAME }} · {{ GCMS_WARD }}</p>
