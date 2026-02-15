@@ -1,5 +1,20 @@
 from django.contrib import admin
-from .models import Ward, Zone, Route, Cart
+from .models import Ward, Zone, Route, Cart, SystemSetting
+
+
+@admin.register(SystemSetting)
+class SystemSettingAdmin(admin.ModelAdmin):
+    list_display = ('key', 'value_preview', 'description', 'updated_at')
+    search_fields = ('key', 'description')
+    list_editable = ()  # edit via list or form
+
+    def value_preview(self, obj):
+        if not obj.value:
+            return '(empty)'
+        if len(obj.value) > 50:
+            return obj.value[:47] + '...'
+        return obj.value
+    value_preview.short_description = 'Value'
 
 
 @admin.register(Ward)

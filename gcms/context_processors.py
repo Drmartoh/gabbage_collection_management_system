@@ -2,6 +2,18 @@
 from django.conf import settings
 
 
+def _get_here_api_key():
+    """HERE API key: from SystemSetting (Settings page) first, then .env/settings."""
+    try:
+        from core.models import SystemSetting
+        key = (SystemSetting.get_value('here_api_key', '') or '').strip()
+        if key:
+            return key
+    except Exception:
+        pass
+    return getattr(settings, 'HERE_API_KEY', '') or ''
+
+
 def gcms_settings(request):
     """Expose GCMS settings to templates (non-sensitive only)."""
     return {
@@ -9,7 +21,7 @@ def gcms_settings(request):
         'GCMS_SITE_NAME': 'Garbage Collection Management System',
         'GCMS_WARD': 'Karai Ward',
         'GCMS_COUNTY': 'Kiambu County',
-        'HERE_API_KEY': getattr(settings, 'HERE_API_KEY', '') or '',
+        'HERE_API_KEY': _get_here_api_key(),
     }
 
 

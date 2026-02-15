@@ -73,23 +73,25 @@ In the PythonAnywhere **Web** tab, set the following. Replace the project folder
 | **WSGI configuration file** | `/var/www/gcmskarai_pythonanywhere_com_wsgi.py` (PA sets this; you only edit its contents) |
 | **Virtualenv** | `/home/gcmskarai/.virtualenvs/gcms` (if you used `mkvirtualenv gcms`) or `/home/gcmskarai/gabbage_collection_management_system/venv` (if you used a venv inside the project) |
 
-**Edit the WSGI file** (click the path to open it). Replace the entire file with:
+**Edit the WSGI file** (click the path to open it). Replace the entire file with the following. Using one **resolved** path and setting the working directory avoids the "notifications has multiple filesystem locations" error:
 
 ```python
 import os
 import sys
 
-path = '/home/gcmskarai/gabbage_collection_management_system'
-if path not in sys.path:
-    sys.path.insert(0, path)
+# Use a single canonical path (no . or ..) so app modules are not seen twice
+project_root = os.path.abspath('/home/gcmskarai/django_projects/gabbage_collection_management_system')
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+os.chdir(project_root)
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'gcms.settings'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gcms.settings')
 
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 ```
 
-If your project is in a different folder (e.g. `/home/gcmskarai/gcms_project`), change `path` in the WSGI file and in the Source code / Working directory fields to that path.
+If your project is elsewhere (e.g. `/home/gcmskarai/gabbage_collection_management_system`), change the path in the first line to that directory.
 
 **Static files** (in the same Web tab, scroll to "Static files"):
 | URL | Directory |

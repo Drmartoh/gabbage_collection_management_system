@@ -100,7 +100,7 @@ GCMS is a web application for managing **garbage collection** in a defined geogr
 
 ### 3.4 Context Processors
 
-- **gcms_settings:** Exposes `GCMS_RATE_PER_TENANT`, `GCMS_SITE_NAME`, `GCMS_WARD`, `GCMS_COUNTY`, `HERE_API_KEY` (non-sensitive) to templates.
+- **gcms_settings:** Exposes `GCMS_RATE_PER_TENANT`, `GCMS_SITE_NAME`, `GCMS_WARD`, `GCMS_COUNTY`, `HERE_API_KEY` (non-sensitive) to templates. `HERE_API_KEY` is read from **core.SystemSetting** (Settings page) first, then from `.env`/settings.
 - **gcms_notification_count:** Exposes `gcms_unread_notifications` for the current user.
 - **gcms_walkthrough:** Exposes `gcms_walkthrough_enabled`, `gcms_show_welcome_tour`, `gcms_show_walkthrough_tip`, `gcms_walkthrough_tip`, `gcms_walkthrough_page_slug` for in-app training (first-login welcome and per-page tips).
 
@@ -259,7 +259,7 @@ GCMS is a web application for managing **garbage collection** in a defined geogr
 
 ### 7.1 HERE Integration
 
-- **API key:** Set `HERE_API_KEY` in `.env`. Used for Maps JavaScript API 3.1, Geocoding & Search (geocode, autosuggest), Routing API v8, Browse (nearby places).
+- **API key:** Set in **Settings → HERE Maps** (saved in SystemSetting) or in `.env` as `HERE_API_KEY`. Value from Settings overrides .env. Used for Maps JavaScript API 3.1, Geocoding & Search (geocode, autosuggest), Routing API v8, Browse (nearby places).
 - **Templates (templates/map/):**
   - **here_single_map.html:** Single marker map (lat, lng, optional label, height).
   - **here_multi_map.html:** Multiple markers, bounds fit.
@@ -331,7 +331,7 @@ GCMS is a web application for managing **garbage collection** in a defined geogr
 
 ### 9.3 System settings (core.SystemSetting) and in-app training
 
-- **SystemSetting** is a key-value model used for options editable from the GCMS Settings page. The only key used by default is **walkthrough_enabled** (value `true` or `false`). When `true`, in-app training is on: first-time users see a welcome modal, and the first time they visit each major page (Landlords, Billing, etc.) they see a short explanatory tip. Admins can turn this off via **Settings → In-app training → Enable/Disable → Save**.
+- **SystemSetting** is a key-value model used for options editable from the GCMS Settings page. Keys used: **walkthrough_enabled** (value `true`/`false`), **billing_rate_per_tenant** (default fee in KES), **here_api_key** (HERE Maps API key; overrides .env when set). When `true`, in-app training is on: first-time users see a welcome modal, and the first time they visit each major page (Landlords, Billing, etc.) they see a short explanatory tip. Admins can turn this off via **Settings → In-app training → Enable/Disable → Save**.
 - Tip content is defined in **core/walkthrough.py** (`TOUR_PAGES`: view name → slug, title, body). Covered views include admin_dashboard, analytics_dashboard, properties_heatmap, ward_map, route_list, landlord_list, **tenant_list**, landlord_detail, property_detail, assignment_list, collector_dashboard, labourer_list, garbage_log_list, bill_list, arrears_list, expense_list, labourer_payment_list, incident_list, notification_list, export_menu, audit_log, county_dashboard, ward_list, zone_list, cart_list, gcms_settings, landlord_dashboard, my_bills.
 
 ### 9.4 Handlers
@@ -458,7 +458,7 @@ Copy the printed string into your `.env` file, e.g. `SECRET_KEY=django-insecure-
 - Use **PostgreSQL** (or another production DB) via **DATABASE_URL**.
 - Configure **EMAIL_*** for password reset and any other emails.
 - Optionally set **GCMS_SMS_*** for payment SMS.
-- Set **HERE_API_KEY** for maps; restrict key by referrer in HERE developer portal.
+- Set **HERE_API_KEY** for maps (Settings → HERE Maps or `.env`); restrict key by referrer in HERE developer portal.
 - **SESSION_COOKIE_SECURE** and **CSRF_COOKIE_SECURE** true over HTTPS.
 - Run **migrate** and **collectstatic**; use a production WSGI/ASGI server (e.g. Gunicorn + Nginx or PythonAnywhere).
 

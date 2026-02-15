@@ -54,19 +54,46 @@ def gcms_settings_page(request):
                 return redirect('core:gcms_settings')
             except (ValueError, TypeError):
                 messages.error(request, 'Enter a valid whole number for the fee.')
+        if 'here_api_key' in request.POST:
+            key = (request.POST.get('here_api_key') or '').strip()
+            SystemSetting.set_value('here_api_key', key, 'HERE Maps API key for maps, geocoding, routing')
+            if key:
+                messages.success(request, 'HERE Maps API key saved. Maps will use it.')
+            else:
+                messages.success(request, 'Saved HERE key cleared. Using .env value if set.')
+            return redirect('core:gcms_settings')
+        if 'sms_api_url' in request.POST:
+            url = (request.POST.get('sms_api_url') or '').strip()
+            key = (request.POST.get('sms_api_key') or '').strip()
+            sender = (request.POST.get('sms_sender_id') or '').strip()
+            # If API key left blank, keep existing value
+            if not key:
+                key = SystemSetting.get_value('sms_api_key', '')
+            SystemSetting.set_value('sms_api_url', url, 'SMS provider API URL')
+            SystemSetting.set_value('sms_api_key', key, 'SMS provider API key')
+            SystemSetting.set_value('sms_sender_id', sender or 'GCMS', 'SMS sender ID')
+            messages.success(request, 'SMS settings saved.')
+            return redirect('core:gcms_settings')
 
     walkthrough_enabled = SystemSetting.get_value('walkthrough_enabled', 'true').lower() in ('true', '1', 'yes')
     rate_from_setting = SystemSetting.get_value('billing_rate_per_tenant', '')
     rate_per_tenant = int(rate_from_setting) if rate_from_setting.isdigit() else getattr(django_settings, 'GCMS_RATE_PER_TENANT_MONTHLY', 100)
+    here_key_from_setting = SystemSetting.get_value('here_api_key', '')
+    here_configured = bool(here_key_from_setting or getattr(django_settings, 'HERE_API_KEY', ''))
+    sms_url = SystemSetting.get_value('sms_api_url', '') or getattr(django_settings, 'GCMS_SMS_API_URL', '')
+    sms_key = SystemSetting.get_value('sms_api_key', '') or getattr(django_settings, 'GCMS_SMS_API_KEY', '')
+    sms_sender = SystemSetting.get_value('sms_sender_id', '') or getattr(django_settings, 'GCMS_SMS_SENDER_ID', 'GCMS')
+    sms_configured = bool(sms_url and sms_key)
     return render(request, 'core/settings.html', {
         'site_name': getattr(django_settings, 'GCMS_SITE_NAME', 'GCMS'),
         'ward': getattr(django_settings, 'GCMS_WARD', ''),
         'county': getattr(django_settings, 'GCMS_COUNTY', ''),
         'rate_per_tenant': rate_per_tenant,
-        'here_configured': bool(getattr(django_settings, 'HERE_API_KEY', '')),
-        'sms_configured': bool(
-            getattr(django_settings, 'GCMS_SMS_API_URL', '') and getattr(django_settings, 'GCMS_SMS_API_KEY', '')
-        ),
+        'here_configured': here_configured,
+        'sms_configured': sms_configured,
+        'sms_api_url': sms_url,
+        'sms_api_key': sms_key,
+        'sms_sender_id': sms_sender,
         'session_hours': getattr(django_settings, 'SESSION_COOKIE_AGE', 28800) // 3600,
         'walkthrough_enabled': walkthrough_enabled,
         'breadcrumbs': [

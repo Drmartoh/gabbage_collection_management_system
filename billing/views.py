@@ -189,9 +189,8 @@ def record_payment(request, bill_id):
                             link='/billing/my/',
                         )
                     if bill.landlord.phone and bill.landlord.phone.strip():
-                        from django.conf import settings
-                        if getattr(settings, 'GCMS_SMS_API_URL', None) and getattr(settings, 'GCMS_SMS_API_KEY', None):
-                            from notifications.services import send_sms
+                        from notifications.services import send_sms, is_sms_configured
+                        if is_sms_configured():
                             bill.refresh_from_db()
                             msg = f'GCMS: Payment of KES {amount_dec:,.0f} received. Balance: KES {bill.balance:,.0f}.'
                             send_sms(bill.landlord.phone.strip(), msg)

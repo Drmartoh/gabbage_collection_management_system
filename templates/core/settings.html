@@ -5,7 +5,7 @@
   <h1 class="page-title mb-0"><i class="bi bi-gear text-primary me-2"></i> Settings</h1>
   <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
 </div>
-<p class="text-muted small mb-4">GCMS configuration. In-app training can be toggled below; other values are read from <code>.env</code> or <code>gcms/settings.py</code>. For users and roles use Django Admin.</p>
+<p class="text-muted small mb-4">GCMS configuration. You can edit <strong>HERE Maps</strong> and <strong>SMS</strong> below (or set in <code>.env</code>). For users and roles use <a href="/admin/">Django Admin</a>.</p>
 <div class="row g-3">
   <div class="col-md-6 col-lg-4">
     <div class="card h-100">
@@ -52,9 +52,18 @@
     <div class="card h-100">
       <div class="card-header"><i class="bi bi-map me-2"></i> HERE Maps</div>
       <div class="card-body">
-        <p class="mb-0">
-          {% if here_configured %}<span class="badge bg-success">Configured</span> Maps, geocoding & routing on.{% else %}<span class="badge bg-secondary">Not set</span> Set <code>HERE_API_KEY</code> in .env.{% endif %}
+        <p class="small text-muted mb-2">Required for ward map, properties map, route map, address search and geocoding. Get a key at <a href="https://platform.here.com/" target="_blank" rel="noopener">platform.here.com</a>. You can set it here or in <code>.env</code> as <code>HERE_API_KEY</code>.</p>
+        <p class="mb-2">
+          {% if here_configured %}<span class="badge bg-success">Configured</span> Maps on.{% else %}<span class="badge bg-secondary">Not set</span> Add a key below or in .env.{% endif %}
         </p>
+        <form method="post" action="{% url 'core:gcms_settings' %}">
+          {% csrf_token %}
+          <div class="input-group">
+            <input type="password" name="here_api_key" id="id_here_api_key" class="form-control" placeholder="{% if here_configured %}Enter new key or leave blank to keep{% else %}Paste HERE API key{% endif %}" autocomplete="off">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+          <p class="form-text small mb-0">Set here or in .env as <code>HERE_API_KEY</code>. Value saved here overrides .env. Submit empty to clear.</p>
+        </form>
       </div>
     </div>
   </div>
@@ -62,9 +71,26 @@
     <div class="card h-100">
       <div class="card-header"><i class="bi bi-chat-dots me-2"></i> SMS</div>
       <div class="card-body">
-        <p class="mb-0">
-          {% if sms_configured %}<span class="badge bg-success">Configured</span> Payment SMS can be sent.{% else %}<span class="badge bg-secondary">Not set</span> Set <code>GCMS_SMS_API_URL</code> and <code>GCMS_SMS_API_KEY</code> in .env.{% endif %}
+        <p class="small text-muted mb-2">For payment confirmation SMS. Set here or in .env as <code>GCMS_SMS_API_URL</code>, <code>GCMS_SMS_API_KEY</code>.</p>
+        <p class="mb-2">
+          {% if sms_configured %}<span class="badge bg-success">Configured</span>{% else %}<span class="badge bg-secondary">Not set</span>{% endif %}
         </p>
+        <form method="post" action="{% url 'core:gcms_settings' %}">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label for="id_sms_api_url" class="form-label small">API URL</label>
+            <input type="url" name="sms_api_url" id="id_sms_api_url" class="form-control form-control-sm" placeholder="https://api.sms-provider.com/send" value="{{ sms_api_url|default:'' }}" autocomplete="off">
+          </div>
+          <div class="mb-2">
+            <label for="id_sms_api_key" class="form-label small">API Key</label>
+            <input type="password" name="sms_api_key" id="id_sms_api_key" class="form-control form-control-sm" placeholder="{% if sms_configured %}•••••• (blank to keep){% else %}API key{% endif %}" autocomplete="off">
+          </div>
+          <div class="mb-2">
+            <label for="id_sms_sender_id" class="form-label small">Sender ID (optional)</label>
+            <input type="text" name="sms_sender_id" id="id_sms_sender_id" class="form-control form-control-sm" placeholder="GCMS" value="{{ sms_sender_id|default:'' }}" maxlength="11">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
       </div>
     </div>
   </div>
