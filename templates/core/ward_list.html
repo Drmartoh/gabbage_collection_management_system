@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Wards{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-geo-alt text-success me-2"></i> Wards</h1>
+  <a href="{% url 'core:ward_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Ward</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Name</th><th>County</th><th>Code</th><th>Active</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for w in wards %}
+            <tr>
+              <td class="fw-500">{{ w.name }}</td>
+              <td>{{ w.county }}</td>
+              <td>{{ w.code|default:"—" }}</td>
+              <td>{% if w.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'core:ward_edit' w.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'core:ward_delete' w.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-5">No wards yet. <a href="{% url 'core:ward_create' %}">Add one</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

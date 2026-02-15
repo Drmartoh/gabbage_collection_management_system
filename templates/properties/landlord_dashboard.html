@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My properties{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-house-door text-success me-2"></i> My properties</h1>
+<p class="text-muted mb-4">Welcome back, <strong>{{ profile.full_name }}</strong>.</p>
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center">
+    <i class="bi bi-building me-2"></i>
+    Your properties
+  </div>
+  <div class="card-body">
+    {% for prop in properties %}
+      <div class="border rounded-3 p-3 mb-3 bg-light bg-opacity-50">
+        <div class="d-flex justify-content-between align-items-start">
+          <h6 class="fw-bold mb-1">{{ prop.name }}</h6>
+          <span class="badge bg-secondary">{{ prop.route|default:"No route" }}</span>
+        </div>
+        <ul class="mb-0 mt-2 ps-3 small">
+          {% for t in prop.tenants.all %}
+            {% if t.is_active %}
+              <li>{{ t.full_name }}{% if t.phone %} · {{ t.phone }}{% endif %}</li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% empty %}
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-building display-6 d-block mb-2 opacity-50"></i>
+        <p class="mb-0">No properties registered yet.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<a href="{% url 'billing:my_bills' %}" class="btn btn-primary">
+  <i class="bi bi-receipt me-2"></i> View my bills
+</a>
+{% endblock %}

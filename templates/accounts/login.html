@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-5">
+  <div class="col-11 col-sm-10 col-md-6 col-lg-5">
+    <div class="text-center mb-4 gcms-animate-in" style="animation-delay: 0.05s">
+      <div class="login-logo d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary mb-3" style="width:80px;height:80px">
+        <i class="bi bi-recycle" style="font-size:2.25rem"></i>
+      </div>
+      <h1 class="fw-bold mb-1" style="color:var(--gcms-text);font-size:1.85rem">😊 Welcome back</h1>
+      <p class="text-muted mb-0">{{ GCMS_SITE_NAME }} · {{ GCMS_WARD }}</p>
+    </div>
+    <div class="card shadow-sm border-0 gcms-animate-in" style="animation-delay: 0.15s">
+      <div class="card-body p-4 p-sm-5">
+        <h5 class="fw-bold mb-4">Sign in to your account</h5>
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger d-flex align-items-center mb-3">
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <form method="post" action="{% url 'accounts:login' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_username" class="form-label fw-bold">Username</label>
+            <input type="text" name="username" id="id_username" class="form-control form-control-lg" placeholder="Enter your username" required autofocus>
+          </div>
+          <div class="mb-4">
+            <label for="id_password" class="form-label fw-bold">Password</label>
+            <input type="password" name="password" id="id_password" class="form-control form-control-lg" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2.5 px-4 fw-bold">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Sign in
+          </button>
+          <input type="hidden" name="next" value="{{ next }}">
+        </form>
+        <p class="text-center mt-3 mb-0"><a href="{% url 'accounts:password_reset' %}" class="text-muted small">Forgot password?</a></p>
+      </div>
+    </div>
+    <p class="text-center text-muted small mt-3 mb-0 gcms-animate-in" style="animation-delay: 0.25s">🏘️ Community waste management · Karai Ward, Kiambu County</p>
+  </div>
+</div>
+<style>
+.login-logo { transition: transform 0.3s ease; }
+.login-logo:hover { transform: rotate(-8deg) scale(1.05); }
+</style>
+{% endblock %}

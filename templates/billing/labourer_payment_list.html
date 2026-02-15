@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Payroll (casual labourers){% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-cash-stack me-2"></i> Payroll (casual labourers)</h1>
+  <a href="{% url 'billing:labourer_payment_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Record payment</a>
+</div>
+<p class="text-muted small">Pay labourers every Saturday. Record payments here.</p>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Labourer</th>
+            <th>Week ending (Sat)</th>
+            <th>Amount</th>
+            <th>Paid at</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td class="fw-500">{{ p.labourer.full_name }}</td>
+              <td>{{ p.week_ending_date }}</td>
+              <td>KES {{ p.amount|floatformat:0|intcomma }}</td>
+              <td>{{ p.paid_at|date:"d M Y"|default:"—" }}</td>
+              <td>{{ p.reference|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">No payroll records yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

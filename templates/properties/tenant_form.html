@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edit Tenant{% else %}Add Tenant{% endif %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-person-plus text-primary me-2"></i> {% if object %}Edit Tenant{% else %}Add Tenant{% endif %}</h1>
+  <a href="{% url 'properties:property_detail' property_obj.pk %}" class="btn btn-outline-primary"><i class="bi bi-arrow-left me-1"></i> Back to {{ property_obj.name }}</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <p class="text-muted small mb-3">Property: <strong>{{ property_obj.name }}</strong> ({{ property_obj.landlord.full_name }})</p>
+    <form method="post">{% csrf_token %}{% include 'core/_form_fields.html' with form=form %}
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{% if object %}Update{% else %}Add{% endif %} Tenant</button>
+        <a href="{% url 'properties:property_detail' property_obj.pk %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

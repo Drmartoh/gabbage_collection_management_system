@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ property_obj.name }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-house-door text-primary me-2"></i> {{ property_obj.name }}</h1>
+  <div class="d-flex gap-2">
+    <a href="{% url 'properties:property_edit' property_obj.pk %}" class="btn btn-outline-primary">Edit Property</a>
+    <a href="{% url 'properties:property_delete' property_obj.pk %}" class="btn btn-outline-danger">Delete</a>
+    <a href="{% url 'properties:landlord_detail' property_obj.landlord_id %}" class="btn btn-outline-secondary">Back to {{ property_obj.landlord.full_name }}</a>
+  </div>
+</div>
+<div class="card mb-4">
+  <div class="card-body">
+    <p class="mb-1"><strong>Landlord:</strong> <a href="{% url 'properties:landlord_detail' property_obj.landlord_id %}">{{ property_obj.landlord.full_name }}</a></p>
+    <p class="mb-1"><strong>Route:</strong> {{ property_obj.route|default:"—" }}</p>
+    {% if property_obj.physical_address %}<p class="mb-1"><strong>Address:</strong> {{ property_obj.physical_address }}</p>{% endif %}
+    {% if property_obj.plot_number %}<p class="mb-1"><strong>Plot:</strong> {{ property_obj.plot_number }}</p>{% endif %}
+    <p class="mb-0">{% if property_obj.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</p>
+  </div>
+</div>
+{% if property_obj.latitude and property_obj.longitude %}
+  <h5 class="fw-bold mb-2"><i class="bi bi-geo-alt text-primary me-2"></i> Location</h5>
+  {% if HERE_API_KEY %}
+  <div class="d-flex flex-wrap gap-2 mb-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="gcms-property-nearby-places-btn"><i class="bi bi-pin-map me-1"></i> Nearby places (HERE)</button>
+  </div>
+  {% endif %}
+  {% include "map/here_single_map.html" with lat=property_obj.latitude lng=property_obj.longitude label=property_obj.name height="320px" %}
+  {% if HERE_API_KEY %}
+  <div id="gcms-property-nearby-panel" class="card mb-4 d-none">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span class="fw-bold">Nearby places (HERE)</span>
+      <button type="button" class="btn-close btn-sm" aria-label="Close" id="gcms-property-nearby-close"></button>
+    </div>
+    <div class="card-body"><div id="gcms-property-nearby-list"></div></div>
+  </div>
+  {% endif %}
+{% endif %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h5 class="fw-bold mb-0">Tenants (billing units)</h5>
+  <a href="{% url 'properties:tenant_create' property_obj.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Tenant</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Name</th><th>Phone</th><th>House no.</th><th>Email</th><th>Rate</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for t in property_obj.tenants.all %}
+            <tr>
+              <td class="fw-500">{{ t.full_name }}</td>
+              <td>{{ t.phone|default:"—" }}</td>
+              <td>{{ t.house_no|default:"—" }}</td>
+              <td>{{ t.email|default:"—" }}</td>
+              <td>{% if t.monthly_rate %}KES {{ t.monthly_rate }}{% else %}<span class="text-muted">Standard</span>{% endif %}</td>
+              <td>{% if t.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'properties:tenant_edit' t.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'properties:tenant_delete' t.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No tenants. <a href="{% url 'properties:tenant_create' property_obj.pk %}">Add one</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if HERE_API_KEY and property_obj.latitude and property_obj.longitude %}
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var lat = {{ property_obj.latitude }}, lng = {{ property_obj.longitude }};
+  var btn = document.getElementById('gcms-property-nearby-places-btn');
+  var panel = document.getElementById('gcms-property-nearby-panel');
+  var listEl = document.getElementById('gcms-property-nearby-list');
+  var closeBtn = document.getElementById('gcms-property-nearby-close');
+  if (!btn || !panel) return;
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  btn.addEventListener('click', function() {
+    if (panel.classList.contains('d-none')) {
+      listEl.innerHTML = '<p class="text-muted small">Loading…</p>';
+      panel.classList.remove('d-none');
+      var url = 'https://browse.search.hereapi.com/v1/browse?at=' + lat + ',' + lng + '&limit=12&apikey=' + encodeURIComponent(apiKey);
+      fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+        var items = (data.items || []).slice(0, 12);
+        listEl.innerHTML = '';
+        items.forEach(function(item) {
+          var title = item.title || (item.address && item.address.label) || 'Place';
+          var div = document.createElement('div');
+          div.className = 'small mb-2';
+          div.innerHTML = '<strong>' + esc(title) + '</strong>' + (item.address && item.address.label && item.address.label !== title ? '<br><span class="text-muted">' + esc(item.address.label) + '</span>' : '');
+          listEl.appendChild(div);
+        });
+        if (!items.length) listEl.innerHTML = '<p class="text-muted small">No places found.</p>';
+      }).catch(function() { listEl.innerHTML = '<p class="text-danger small">Failed to load places.</p>'; });
+    } else {
+      panel.classList.add('d-none');
+    }
+  });
+  if (closeBtn) closeBtn.addEventListener('click', function() { panel.classList.add('d-none'); });
+})();
+</script>
+{% endif %}
+{% endblock %}

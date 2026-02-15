@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Pending role{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-5">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm border-0 text-center gcms-animate-in">
+      <div class="card-body p-5">
+        <div class="pending-role-icon d-inline-flex align-items-center justify-content-center rounded-3 bg-warning bg-opacity-10 text-warning mb-3" style="width:88px;height:88px">
+          <i class="bi bi-person-x" style="font-size:2.5rem"></i>
+        </div>
+        <h4 class="fw-bold mb-2">No role assigned</h4>
+        <p class="text-muted mb-4">Your account doesn't have a role yet. Assign yourself a role below, or contact your administrator.</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          {% if user.is_staff %}
+          <a href="/admin/accounts/user/{{ user.pk }}/change/" class="btn btn-primary">
+            <i class="bi bi-gear me-2"></i> Assign my role (Django Admin)
+          </a>
+          <p class="w-100 small text-muted mb-0 mt-2">In the form, set <strong>Role</strong> to e.g. <strong>Super Admin</strong>, then Save. Then refresh this page or open Dashboard.</p>
+          {% endif %}
+          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-primary">
+            <i class="bi bi-box-arrow-left me-2"></i> Sign out
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.pending-role-icon { transition: transform 0.3s ease; }
+.pending-role-icon:hover { transform: scale(1.08); }
+</style>
+{% endblock %}

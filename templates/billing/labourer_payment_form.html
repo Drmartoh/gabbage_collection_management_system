@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Record labourer payment{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-cash-stack me-2"></i> Record payment (Saturday payroll)</h1>
+  <a href="{% url 'billing:labourer_payment_list' %}" class="btn btn-outline-primary">Back to payroll</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Record payment</button>
+      <a href="{% url 'billing:labourer_payment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

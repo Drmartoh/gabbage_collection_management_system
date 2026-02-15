@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}{% if incident %}Edit incident{% else %}Report incident{% endif %}{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-exclamation-triangle text-success me-2"></i> {% if incident %}Edit incident{% else %}Report incident{% endif %}</h1>
+<div class="card">
+  <div class="card-body">
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <div class="mb-3">
+    {% include "map/here_address_search.html" with address_selector="" lat_selector="#id_latitude" lng_selector="#id_longitude" %}
+  </div>
+  <p class="text-muted">Or use "Get my location" to tag GPS from your device.</p>
+  <button type="button" class="btn btn-outline-secondary btn-sm" id="getLoc">Get my location</button>
+
+  {% if photo_formset %}
+  <hr class="my-4">
+  <h6 class="fw-bold mb-2">Photos (optional)</h6>
+  {{ photo_formset.management_form }}
+  {% for f in photo_formset %}
+    <div class="row g-2 mb-2 align-items-end">
+      <div class="col-md-6">{{ f.image.label_tag }}{{ f.image }}{% if f.image.errors %}<div class="text-danger small">{{ f.image.errors.0 }}</div>{% endif %}</div>
+      <div class="col-md-4">{{ f.caption.label_tag }}{{ f.caption }}</div>
+      {% if f.DELETE %}<div class="col-md-2">{{ f.DELETE }} Delete</div>{% endif %}
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i> {% if incident %}Update{% else %}Submit{% endif %}</button>
+    <a href="{% url 'incidents:incident_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+  </div>
+</div>
+{% block extra_js %}
+<script>
+  document.getElementById('getLoc').onclick = function() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(p) {
+          var lat = document.querySelector('[name=latitude]');
+          var lon = document.querySelector('[name=longitude]');
+          if (lat) lat.value = p.coords.latitude;
+          if (lon) lon.value = p.coords.longitude;
+        }
+      );
+    }
+  };
+</script>
+{% endblock %}
+{% endblock %}

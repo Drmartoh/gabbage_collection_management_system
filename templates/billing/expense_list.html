@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Expenses{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-wallet2 me-2"></i> Expenses</h1>
+  <div class="d-flex align-items-center gap-2">
+    <a href="{% url 'billing:expense_type_list' %}" class="btn btn-outline-secondary">Expense types</a>
+    <a href="{% url 'billing:expense_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add expense</a>
+  </div>
+</div>
+<div class="mb-3">
+  <a href="?status=unpaid" class="btn btn-sm btn-outline-warning">Unpaid</a>
+  <a href="?status=paid" class="btn btn-sm btn-outline-success">Paid</a>
+  <a href="{% url 'billing:expense_list' %}" class="btn btn-sm btn-outline-secondary">All</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Due date</th>
+            <th>Vendor</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expenses %}
+            <tr>
+              <td class="fw-500">{{ e.expense_type.name }}</td>
+              <td>KES {{ e.amount|floatformat:0|intcomma }}</td>
+              <td>{{ e.due_date|default:"—" }}</td>
+              <td>{{ e.vendor|default:"—" }}</td>
+              <td>
+                {% if e.is_paid %}
+                  <span class="badge bg-success">Paid</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Unpaid</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'billing:expense_edit' e.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                {% if not e.is_paid %}
+                  <form action="{% url 'billing:expense_mark_paid' e.pk %}" method="post" class="d-inline">{% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success">Mark paid</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">No expenses yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% if page_obj %}{% include "pagination.html" with page_obj=page_obj %}{% endif %}
+{% endblock %}

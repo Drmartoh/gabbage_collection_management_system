@@ -1,0 +1,43 @@
+{% comment %}
+  Multi-marker HERE map. Requires: markers (list of dicts with lat, lng, label).
+  Optional: map_id (default here-multi-map), height (default 400px). Only renders if HERE_API_KEY and markers.
+{% endcomment %}
+{% if HERE_API_KEY and markers %}
+<div class="gcms-here-map-wrap rounded-3 overflow-hidden shadow-sm mb-3" style="height: {{ height|default:'400px' }};">
+  <div id="{{ map_id|default:'here-multi-map' }}" class="w-100 h-100" style="min-height: 300px;"></div>
+</div>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var markersData = {{ markers_json|safe }};
+  var mapId = '{{ map_id|default:"here-multi-map"|escapejs }}';
+  var container = document.getElementById(mapId);
+  if (!container || !apiKey || !markersData.length) return;
+  var platform = new H.service.Platform({ apikey: apiKey });
+  var defaultLayers = platform.createDefaultLayers();
+  var first = markersData[0];
+  var map = new H.Map(container, defaultLayers.vector.normal.map, {
+    center: { lat: first.lat, lng: first.lng },
+    zoom: 14
+  });
+  new H.mapevents.MapEvents(map);
+  new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+  var minLat = first.lat, maxLat = first.lat, minLng = first.lng, maxLng = first.lng;
+  for (var i = 0; i < markersData.length; i++) {
+    var m = markersData[i];
+    var lat = m.lat, lng = m.lng;
+    var marker = new H.map.Marker({ lat: lat, lng: lng });
+    map.addObject(marker);
+    if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+    if (lng < minLng) minLng = lng; if (lng > maxLng) maxLng = lng;
+  }
+  if (markersData.length > 1) {
+    var rect = new H.geo.Rect(maxLat, minLng, minLat, maxLng);
+    map.getViewModel().setLookAtData({ bounds: rect });
+  }
+  window.addEventListener('resize', function() { map.getViewPort().resize(); });
+})();
+</script>
+{% endif %}

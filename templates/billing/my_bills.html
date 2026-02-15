@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}My bills{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-receipt text-success me-2"></i> My bills</h1>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Tenants</th>
+            <th>Amount</th>
+            <th>Paid</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bills %}
+            <tr>
+              <td class="fw-500">{{ b.cycle }}</td>
+              <td>{{ b.tenant_count }}</td>
+              <td>KES {{ b.amount|floatformat:0|intcomma }}</td>
+              <td class="text-success">KES {{ b.amount_paid|floatformat:0|intcomma }}</td>
+              <td>KES {{ b.balance|floatformat:0|intcomma }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <i class="bi bi-receipt display-6 d-block mb-2 opacity-50"></i>
+                <p class="mb-0">No bills yet</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

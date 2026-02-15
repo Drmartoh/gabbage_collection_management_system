@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Delete assignment{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6">
+  <div class="card border-danger"><div class="card-body text-center p-4">
+    <div class="text-danger mb-3"><i class="bi bi-exclamation-triangle display-4"></i></div>
+    <h4>Delete assignment</h4>
+    <p>Delete assignment for {{ assignment.route.name }} on {{ assignment.date }} ({{ assignment.collector.get_display_name }})? Collection records will also be removed.</p>
+    <form method="post">{% csrf_token %}
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+      <a href="{% url 'collections:assignment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

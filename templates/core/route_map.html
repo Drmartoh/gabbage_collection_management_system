@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Route map — {{ route.name }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-map text-primary me-2"></i> {{ route.name }} — Map</h1>
+  <a href="{% url 'core:route_list' %}" class="btn btn-outline-secondary">Back to Routes</a>
+</div>
+<p class="text-muted mb-3">Zone: {{ route.zone.name }} · {{ route.properties.count }} properties on this route.</p>
+{% if markers %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="position-relative" style="max-width: 360px;">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" id="gcms-route-map-search" placeholder="Type address or place…" autocomplete="off" aria-label="Search on map" aria-autocomplete="list" aria-expanded="false" aria-controls="gcms-route-map-suggestions">
+      </div>
+      <div id="gcms-route-map-suggestions" class="list-group position-absolute top-100 start-0 end-0 mt-1 shadow-sm rounded overflow-hidden d-none" style="z-index: 1050; max-height: 260px; overflow-y: auto;" role="listbox"></div>
+    </div>
+    <span id="gcms-route-map-search-status" class="small text-muted" aria-live="polite"></span>
+    <button type="button" class="btn btn-outline-primary btn-sm" id="gcms-route-show-drive"><i class="bi bi-signpost-2 me-1"></i> Show driving route</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="gcms-route-hide-drive">Hide route</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="gcms-route-nearby-places"><i class="bi bi-pin-map me-1"></i> Nearby places (HERE)</button>
+  </div>
+  <div class="gcms-here-map-wrap rounded-3 overflow-hidden shadow-sm mb-3" style="height: 500px;">
+    <div id="here-route-map" class="w-100 h-100" style="min-height: 300px;"></div>
+  </div>
+  <div id="gcms-nearby-places-panel" class="card mb-3 d-none">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span class="fw-bold">Nearby places (HERE)</span>
+      <button type="button" class="btn-close btn-sm" aria-label="Close" id="gcms-nearby-places-close"></button>
+    </div>
+    <div class="card-body">
+      <div id="gcms-nearby-places-list"></div>
+    </div>
+  </div>
+  <p class="small text-muted">Showing {{ markers|length }} properties with coordinates. Add lat/lng to properties to see them here.</p>
+{% else %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-geo-alt display-4 text-muted"></i>
+      <p class="mb-0 mt-2">No properties with location data on this route. Edit properties to add latitude/longitude, or use <strong>Search location (HERE)</strong> when creating/editing a property.</p>
+      <a href="{% url 'core:route_list' %}" class="btn btn-primary mt-3">Back to Routes</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if HERE_API_KEY and markers %}
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://cdn.jsdelivr.net/npm/@here/flexpolyline@0.1.0/dist/flexpolyline.umd.js" type="text/javascript"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var markersData = {{ markers_json|safe }};
+  if (!apiKey || !markersData.length) return;
+  var container = document.getElementById('here-route-map');
+  var map = container._gcmsHereMap;
+  if (!map) {
+    var platform = new H.service.Platform({ apikey: apiKey });
+    var defaultLayers = platform.createDefaultLayers();
+    var first = markersData[0];
+    map = new H.Map(container, defaultLayers.vector.normal.map, {
+      center: { lat: first.lat, lng: first.lng },
+      zoom: 14
+    });
+    container._gcmsHereMap = map;
+    new H.mapevents.MapEvents(map);
+    new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+  }
+  var mapMarkers = [];
+  var minLat = first.lat, maxLat = first.lat, minLng = first.lng, maxLng = first.lng;
+  for (var i = 0; i < markersData.length; i++) {
+    var m = markersData[i];
+    var lat = m.lat, lng = m.lng;
+    var marker = new H.map.Marker({ lat: lat, lng: lng });
+    map.addObject(marker);
+    mapMarkers.push(marker);
+    if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+    if (lng < minLng) minLng = lng; if (lng > maxLng) maxLng = lng;
+  }
+  if (markersData.length > 1) {
+    var rect = new H.geo.Rect(maxLat, minLng, minLat, maxLng);
+    map.getViewModel().setLookAtData({ bounds: rect });
+  }
+  window.addEventListener('resize', function() { map.getViewPort().resize(); });
+
+  var routeLine = null;
+  function removeRoute() {
+    if (routeLine) { map.removeObject(routeLine); routeLine = null; }
+    document.getElementById('gcms-route-hide-drive').classList.add('d-none');
+  }
+  document.getElementById('gcms-route-show-drive').addEventListener('click', function() {
+    if (routeLine) { removeRoute(); return; }
+    var waypoints = markersData.map(function(m) { return m.lat + ',' + m.lng; });
+    var origin = waypoints[0], dest = waypoints[waypoints.length - 1];
+    var url = 'https://router.hereapi.com/v8/routes?origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(dest) + '&transportMode=car&return=polyline&apikey=' + encodeURIComponent(apiKey);
+    if (waypoints.length > 2) waypoints.slice(1, -1).forEach(function(v) { url += '&via=' + encodeURIComponent(v); });
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      var section = data.routes && data.routes[0] && data.routes[0].sections && data.routes[0].sections[0];
+      var polylineEnc = section && section.polyline && (typeof section.polyline === 'string' ? section.polyline : section.polyline.value);
+      if (!polylineEnc) return;
+      var decoder = (typeof flexpolyline !== 'undefined' && flexpolyline.decode) ? flexpolyline : (typeof FlexPolyline !== 'undefined' && FlexPolyline.decode) ? FlexPolyline : null;
+      var decoded = decoder && decoder.decode ? decoder.decode(polylineEnc) : null;
+      if (!decoded || !decoded.polyline || !decoded.polyline.length) return;
+      var lineString = new H.geo.LineString();
+      decoded.polyline.forEach(function(p) { lineString.pushLatLngAlt(p[0], p[1]); });
+      routeLine = new H.map.Polyline(lineString, { style: { strokeColor: 'var(--gcms-primary, #6366f1)', lineWidth: 5 } });
+      map.addObject(routeLine);
+      map.getViewModel().setLookAtData({ bounds: routeLine.getBoundingBox() });
+      document.getElementById('gcms-route-hide-drive').classList.remove('d-none');
+    }).catch(function() {});
+  });
+  document.getElementById('gcms-route-hide-drive').addEventListener('click', removeRoute);
+
+  var searchMarker = null;
+  var suggestDebounce = null;
+  var currentSuggestions = [];
+  var routeSearchInput = document.getElementById('gcms-route-map-search');
+  var routeSuggestList = document.getElementById('gcms-route-map-suggestions');
+  var centerLat = (minLat + maxLat) / 2, centerLng = (minLng + maxLng) / 2;
+  var routeMapCenter = centerLat + ',' + centerLng;
+
+  function setSearchStatus(msg, isErr) {
+    var el = document.getElementById('gcms-route-map-search-status');
+    if (el) { el.textContent = msg; el.className = 'small ' + (isErr ? 'text-danger' : 'text-muted'); }
+  }
+  function hideSuggestions() {
+    if (routeSuggestList) { routeSuggestList.classList.add('d-none'); routeSuggestList.innerHTML = ''; }
+    if (routeSearchInput) routeSearchInput.setAttribute('aria-expanded', 'false');
+    currentSuggestions = [];
+  }
+  function showOnMap(pos, label) {
+    if (!pos || pos.lat == null || pos.lng == null) return;
+    setSearchStatus(label ? 'Showing: ' + label : 'Location set.');
+    if (searchMarker) map.removeObject(searchMarker);
+    searchMarker = new H.map.Marker({ lat: pos.lat, lng: pos.lng });
+    map.addObject(searchMarker);
+    map.getViewModel().setLookAtData({ center: { lat: pos.lat, lng: pos.lng }, zoom: 16 });
+  }
+  function selectSuggestion(item) {
+    var label = (item.address && item.address.label) || item.title || '';
+    if (item.position && item.position.lat != null && item.position.lng != null) {
+      routeSearchInput.value = label;
+      hideSuggestions();
+      showOnMap(item.position, label);
+      return;
+    }
+    setSearchStatus('Searching…');
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(label || item.title || '') + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var first = data.items && data.items[0];
+        if (first && first.position) {
+          routeSearchInput.value = (first.address && first.address.label) || label;
+          hideSuggestions();
+          showOnMap(first.position, (first.address && first.address.label) || label);
+        } else setSearchStatus('Could not find location.');
+      }).catch(function() { setSearchStatus('Search failed.'); });
+  }
+  function fetchSuggestions(q) {
+    if (!q || q.length < 2) { hideSuggestions(); return; }
+    fetch('https://autosuggest.search.hereapi.com/v1/autosuggest?q=' + encodeURIComponent(q) + '&at=' + routeMapCenter + '&apikey=' + encodeURIComponent(apiKey) + '&limit=8')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var items = (data.items || []).filter(function(it) { return it.title || (it.address && it.address.label); });
+        currentSuggestions = items;
+        if (!routeSuggestList) return;
+        routeSuggestList.innerHTML = '';
+        if (!items.length) { routeSuggestList.classList.add('d-none'); routeSearchInput.setAttribute('aria-expanded', 'false'); return; }
+        items.forEach(function(item) {
+          var lb = (item.address && item.address.label) || item.title || 'Unknown';
+          var div = document.createElement('div');
+          div.className = 'list-group-item list-group-item-action';
+          div.setAttribute('role', 'option');
+          div.textContent = lb;
+          div.addEventListener('click', function() { selectSuggestion(item); });
+          routeSuggestList.appendChild(div);
+        });
+        routeSuggestList.classList.remove('d-none');
+        routeSearchInput.setAttribute('aria-expanded', 'true');
+      }).catch(function() { hideSuggestions(); });
+  }
+  function onSearchInput() {
+    var q = (routeSearchInput.value || '').trim();
+    if (suggestDebounce) clearTimeout(suggestDebounce);
+    if (!q) { hideSuggestions(); return; }
+    suggestDebounce = setTimeout(function() { fetchSuggestions(q); }, 280);
+  }
+  function runGeocodeAndShow() {
+    var q = (routeSearchInput.value || '').trim();
+    if (!q) { setSearchStatus('Type an address or place.'); return; }
+    setSearchStatus('Searching…');
+    hideSuggestions();
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(q) + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var item = data.items && data.items[0];
+        if (!item || !item.position) { setSearchStatus('No results found.'); return; }
+        showOnMap(item.position, (item.address && item.address.label) || item.title);
+      }).catch(function() { setSearchStatus('Search failed.'); });
+  }
+  routeSearchInput.addEventListener('input', onSearchInput);
+  routeSearchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { hideSuggestions(); routeSearchInput.blur(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (currentSuggestions.length) selectSuggestion(currentSuggestions[0]); else runGeocodeAndShow(); }
+  });
+  routeSearchInput.addEventListener('focus', function() { if ((routeSearchInput.value || '').trim().length >= 2 && currentSuggestions.length) routeSuggestList.classList.remove('d-none'); });
+  document.addEventListener('click', function(e) {
+    if (routeSuggestList && routeSearchInput && !routeSuggestList.contains(e.target) && e.target !== routeSearchInput && !routeSearchInput.closest('.position-relative').contains(e.target)) hideSuggestions();
+  });
+
+  var placeMarkers = [];
+  function clearPlaces() {
+    placeMarkers.forEach(function(m) { map.removeObject(m); });
+    placeMarkers = [];
+  }
+  document.getElementById('gcms-route-nearby-places').addEventListener('click', function() {
+    var panel = document.getElementById('gcms-nearby-places-panel');
+    var listEl = document.getElementById('gcms-nearby-places-list');
+    if (panel.classList.contains('d-none')) {
+      listEl.innerHTML = '<p class="text-muted small">Loading…</p>';
+      panel.classList.remove('d-none');
+      clearPlaces();
+      var url = 'https://browse.search.hereapi.com/v1/browse?at=' + routeMapCenter + '&limit=15&apikey=' + encodeURIComponent(apiKey);
+      fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+        var items = (data.items || []).slice(0, 15);
+        listEl.innerHTML = '';
+        items.forEach(function(item) {
+          var pos = item.position;
+          var lat = pos.lat, lng = pos.lng;
+          var title = item.title || item.address && item.address.label || 'Place';
+          var marker = new H.map.Marker({ lat: lat, lng: lng });
+          map.addObject(marker);
+          placeMarkers.push(marker);
+          var div = document.createElement('div');
+          div.className = 'small mb-2';
+          div.innerHTML = '<strong>' + escapeHtml(title) + '</strong>' + (item.address && item.address.label ? '<br><span class="text-muted">' + escapeHtml(item.address.label) + '</span>' : '');
+          listEl.appendChild(div);
+        });
+        if (!items.length) listEl.innerHTML = '<p class="text-muted small">No places found.</p>';
+      }).catch(function() { listEl.innerHTML = '<p class="text-danger small">Failed to load places.</p>'; });
+    } else {
+      panel.classList.add('d-none');
+      clearPlaces();
+    }
+  });
+  document.getElementById('gcms-nearby-places-close').addEventListener('click', function() {
+    document.getElementById('gcms-nearby-places-panel').classList.add('d-none');
+    clearPlaces();
+  });
+  function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+})();
+</script>
+{% endif %}
+{% endblock %}

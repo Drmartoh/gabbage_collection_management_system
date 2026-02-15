@@ -1,0 +1,61 @@
+{% comment %}
+  Small map to confirm position: shows marker when lat/lng are set (e.g. from "Get my location").
+  Requires: HERE_API_KEY. Optional: lat_selector, lng_selector (default #lat, #lon), initial_lat, initial_lng (from server), map_id, height.
+  When lat/lng inputs change, map updates. If no initial coords, center on Kenya until user sets location.
+{% endcomment %}
+{% if HERE_API_KEY %}
+<div class="gcms-here-confirm-map rounded-3 overflow-hidden shadow-sm mb-3" style="height: {{ height|default:'220px' }};">
+  <div id="{{ map_id|default:'here-confirm-map' }}" class="w-100 h-100" style="min-height: 180px;"></div>
+</div>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var latSel = '{{ lat_selector|default:"#lat"|escapejs }}';
+  var lngSel = '{{ lng_selector|default:"#lon"|escapejs }}';
+  var initialLat = {{ initial_lat|default:"null" }};
+  var initialLng = {{ initial_lng|default:"null" }};
+  var mapId = '{{ map_id|default:"here-confirm-map"|escapejs }}';
+  var container = document.getElementById(mapId);
+  if (!container || !apiKey) return;
+  var platform = new H.service.Platform({ apikey: apiKey });
+  var defaultLayers = platform.createDefaultLayers();
+  var defaultCenter = { lat: -1.2921, lng: 36.8219 };
+  var zoom = 14;
+  if (initialLat != null && initialLng != null) {
+    defaultCenter = { lat: initialLat, lng: initialLng };
+  }
+  var map = new H.Map(container, defaultLayers.vector.normal.map, { center: defaultCenter, zoom: zoom });
+  new H.mapevents.MapEvents(map);
+  new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+  var marker = null;
+  function getEl(sel) { return (sel && sel.charAt(0) === '#') ? document.getElementById(sel.slice(1)) : document.querySelector(sel); }
+  function updateMap() {
+    var latIn = getEl(latSel), lngIn = getEl(lngSel);
+    var lat = latIn && parseFloat(latIn.value), lng = lngIn && parseFloat(lngIn.value);
+    if (marker) { map.removeObject(marker); marker = null; }
+    if (lat != null && !isNaN(lat) && lng != null && !isNaN(lng)) {
+      marker = new H.map.Marker({ lat: lat, lng: lng });
+      map.addObject(marker);
+      map.getViewModel().setLookAtData({ center: { lat: lat, lng: lng }, zoom: 17 });
+    } else if (initialLat != null && initialLng != null) {
+      marker = new H.map.Marker({ lat: initialLat, lng: initialLng });
+      map.addObject(marker);
+      map.getViewModel().setLookAtData({ center: { lat: initialLat, lng: initialLng }, zoom: 17 });
+    }
+  }
+  function onInputChange() {
+    var latIn = getEl(latSel), lngIn = getEl(lngSel);
+    if (latIn) latIn.addEventListener('input', updateMap);
+    if (lngIn) lngIn.addEventListener('change', updateMap);
+    if (latIn) latIn.addEventListener('change', updateMap);
+    if (lngIn) lngIn.addEventListener('input', updateMap);
+  }
+  window.addEventListener('gcms-location-update', updateMap);
+  updateMap();
+  setTimeout(onInputChange, 500);
+  window.addEventListener('resize', function() { map.getViewPort().resize(); });
+})();
+</script>
+{% endif %}

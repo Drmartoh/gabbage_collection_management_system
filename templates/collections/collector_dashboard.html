@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}My collections{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-truck text-success me-2"></i> My collections today</h1>
+{% if assignment %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="rounded-3 bg-success bg-opacity-10 text-success p-3 me-3">
+          <i class="bi bi-signpost-2" style="font-size:1.75rem"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-1">{{ assignment.route.name }}</h5>
+          <p class="text-muted mb-0 small">Cart: {{ assignment.cart|default:"—" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header d-flex align-items-center">
+      <i class="bi bi-building me-2"></i>
+      Properties to collect
+    </div>
+    <ul class="list-group list-group-flush">
+      {% for r in records %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="fw-500">{{ r.property.name }}</span>
+          {% if r.status == 'collected' or r.status == 'verified' %}
+            <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i> {{ r.get_status_display }}</span>
+          {% else %}
+            <a href="{% url 'collections:log_collection' r.pk %}" class="btn btn-sm btn-primary">Log collection</a>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li class="list-group-item text-center text-muted py-4">No properties on this route.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% else %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <div class="d-inline-flex align-items-center justify-content-center rounded-3 bg-secondary bg-opacity-10 text-secondary mb-3" style="width:80px;height:80px">
+        <i class="bi bi-calendar-x" style="font-size:2.25rem"></i>
+      </div>
+      <h5 class="fw-bold mb-2">No assignment for today</h5>
+      <p class="text-muted mb-0">Check back later or contact your supervisor.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

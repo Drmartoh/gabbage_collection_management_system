@@ -1,0 +1,134 @@
+{% comment %}
+  HERE address autocomplete: as-you-type suggestions, on select fill address + lat/lng.
+  Requires: HERE_API_KEY. Pass address_selector, lat_selector, lng_selector (e.g. #id_landlord_address, #id_landlord_latitude, #id_landlord_longitude).
+  Optional: map_placeholder_id - if set, a small map preview is shown in that element when a suggestion is selected.
+{% endcomment %}
+{% if HERE_API_KEY %}
+<div class="gcms-here-autocomplete mb-3">
+  <label class="form-label fw-bold">Address <span class="text-danger">*</span></label>
+  <div class="position-relative">
+    <input type="text" class="form-control" id="gcms-autocomplete-input" placeholder="Start typing exact address for suggestions…" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="gcms-autocomplete-list" role="combobox">
+    <ul id="gcms-autocomplete-list" class="list-group position-absolute top-100 start-0 end-0 mt-1 shadow-lg rounded-2 overflow-hidden d-none" style="z-index: 1050; max-height: 280px; overflow-y: auto;" role="listbox"></ul>
+  </div>
+  <input type="hidden" id="gcms-autocomplete-address-target" value="{{ address_selector|default:'#id_landlord_address' }}">
+  <input type="hidden" id="gcms-autocomplete-lat-target" value="{{ lat_selector|default:'#id_landlord_latitude' }}">
+  <input type="hidden" id="gcms-autocomplete-lng-target" value="{{ lng_selector|default:'#id_landlord_longitude' }}">
+  <div id="gcms-autocomplete-status" class="form-text small mt-1" aria-live="polite"></div>
+</div>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var addressSelector = document.getElementById('gcms-autocomplete-address-target').value;
+  var latSelector = document.getElementById('gcms-autocomplete-lat-target').value;
+  var lngSelector = document.getElementById('gcms-autocomplete-lng-target').value;
+  var inputEl = document.getElementById('gcms-autocomplete-input');
+  var listEl = document.getElementById('gcms-autocomplete-list');
+  var statusEl = document.getElementById('gcms-autocomplete-status');
+  if (!inputEl || !listEl || !apiKey) return;
+
+  function bySelector(sel) {
+    if (!sel) return null;
+    var id = (sel.charAt(0) === '#') ? sel.slice(1) : null;
+    return id ? document.getElementById(id) : document.querySelector(sel);
+  }
+  function setStatus(msg, err) {
+    if (statusEl) { statusEl.textContent = msg; statusEl.className = 'form-text small mt-1' + (err ? ' text-danger' : ''); }
+  }
+  function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  var debounceTimer;
+  var currentItems = [];
+  inputEl.addEventListener('input', function() {
+    var q = (inputEl.value || '').trim();
+    clearTimeout(debounceTimer);
+    listEl.classList.add('d-none');
+    listEl.innerHTML = '';
+    currentItems = [];
+    if (q.length < 2) return;
+    debounceTimer = setTimeout(function() {
+      var url = 'https://autosuggest.search.hereapi.com/v1/autosuggest?q=' + encodeURIComponent(q) + '&at=-1.2921,36.8219&apikey=' + encodeURIComponent(apiKey) + '&in=countryCode:KEN&limit=8';
+      fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+        var items = (data.items || []).slice(0, 8);
+        currentItems = items;
+        listEl.innerHTML = '';
+        if (!items.length) { listEl.classList.add('d-none'); return; }
+        items.forEach(function(item, idx) {
+          var li = document.createElement('li');
+          li.className = 'list-group-item list-group-item-action';
+          li.role = 'option';
+          li.tabIndex = -1;
+          var label = (item.address && item.address.label) || item.title || '';
+          if (!label && item.address) label = [item.address.street, item.address.district, item.address.city].filter(Boolean).join(', ');
+          li.textContent = label;
+          li.dataset.index = idx;
+          li.addEventListener('click', function() { selectItem(idx); });
+          listEl.appendChild(li);
+        });
+        listEl.classList.remove('d-none');
+        inputEl.setAttribute('aria-expanded', 'true');
+      }).catch(function() { listEl.classList.add('d-none'); });
+    }, 300);
+  });
+
+  function selectItem(idx) {
+    var item = currentItems[idx];
+    if (!item) return;
+    var label = (item.address && item.address.label) || item.title || '';
+    if (!label && item.address) label = [item.address.street, item.address.district, item.address.city].filter(Boolean).join(', ');
+    var pos = item.position || (item.access && item.access[0] && { lat: item.access[0].lat, lng: item.access[0].lng });
+    var addrTarget = bySelector(addressSelector);
+    var latTarget = bySelector(latSelector);
+    var lngTarget = bySelector(lngSelector);
+    if (addrTarget) addrTarget.value = label;
+    inputEl.value = label;
+    if (pos && latTarget) latTarget.value = pos.lat;
+    if (pos && lngTarget) lngTarget.value = pos.lng;
+    listEl.classList.add('d-none');
+    listEl.innerHTML = '';
+    currentItems = [];
+    inputEl.setAttribute('aria-expanded', 'false');
+    setStatus(pos ? 'Location set: ' + pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5) : 'Address set.');
+  }
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var opts = listEl.querySelectorAll('[role="option"]');
+      if (!opts.length) return;
+      var curr = listEl.querySelector('[aria-selected="true"]');
+      var idx = curr ? parseInt(curr.dataset.index, 10) : -1;
+      idx += (e.key === 'ArrowDown') ? 1 : -1;
+      if (idx < 0) idx = opts.length - 1;
+      if (idx >= opts.length) idx = 0;
+      opts.forEach(function(o) { o.setAttribute('aria-selected', 'false'); });
+      opts[idx].setAttribute('aria-selected', 'true');
+      opts[idx].focus();
+    } else if (e.key === 'Enter') {
+      var sel = listEl.querySelector('[aria-selected="true"]');
+      if (sel) { e.preventDefault(); selectItem(parseInt(sel.dataset.index, 10)); }
+    } else if (e.key === 'Escape') {
+      listEl.classList.add('d-none');
+      inputEl.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!inputEl.contains(e.target) && !listEl.contains(e.target)) {
+      listEl.classList.add('d-none');
+      inputEl.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  var addrTarget = bySelector(addressSelector);
+  if (addrTarget && addrTarget.value) inputEl.value = addrTarget.value;
+
+  var form = inputEl.closest('form');
+  if (form) {
+    form.addEventListener('submit', function() {
+      var addrTarget = bySelector(addressSelector);
+      if (addrTarget && !addrTarget.value && inputEl.value) addrTarget.value = inputEl.value;
+    });
+  }
+})();
+</script>
+{% endif %}

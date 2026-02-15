@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load gcms_forms %}
+{% block title %}{% if object %}Edit Landlord{% else %}Add Landlord{% endif %}{% endblock %}
+{% block content %}
+<h1 class="page-title">{% if object %}Edit Landlord{% else %}Add Landlord{% endif %}</h1>
+<div class="card"><div class="card-body">
+<form method="post" id="landlord-form">{% csrf_token %}
+  {% for field in form %}
+    <div class="mb-3{% if field|is_checkbox %} form-check{% endif %}">
+      {% if field.name == 'address' %}
+        {{ field }}
+        {% include "map/here_address_autocomplete.html" with address_selector="#id_landlord_address" lat_selector="#id_landlord_latitude" lng_selector="#id_landlord_longitude" %}
+        {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors.0 }}</div>{% endif %}
+      {% elif field|is_checkbox %}
+        {{ field }}
+        <label for="{{ field.id_for_label }}" class="form-check-label fw-bold">{{ field.label }}</label>
+      {% else %}
+        <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors.0 }}</div>{% endif %}
+      {% endif %}
+    </div>
+  {% endfor %}
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{% url 'properties:landlord_list' %}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+</div></div>
+{% endblock %}

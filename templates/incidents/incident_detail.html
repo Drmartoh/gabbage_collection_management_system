@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ incident.title }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0">{{ incident.title }}</h1>
+  <div class="d-flex gap-2">
+    {% if not user.is_read_only %}
+    <a href="{% url 'incidents:incident_edit' incident.pk %}" class="btn btn-outline-primary">Edit</a>
+    <a href="{% url 'incidents:incident_delete' incident.pk %}" class="btn btn-outline-danger">Delete</a>
+    {% endif %}
+    <a href="{% url 'incidents:incident_list' %}" class="btn btn-outline-secondary">Back to list</a>
+  </div>
+</div>
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <p class="mb-2"><span class="text-muted">Description</span><br><strong>{{ incident.description }}</strong></p>
+        <p class="mb-2"><span class="text-muted">Severity</span><br><span class="badge bg-secondary">{{ incident.get_severity_display }}</span></p>
+        <p class="mb-2"><span class="text-muted">Status</span><br>{{ incident.get_status_display }}</p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-2"><span class="text-muted">Property</span><br>{{ incident.property|default:"—" }}</p>
+        <p class="mb-2"><span class="text-muted">GPS</span><br>{{ incident.latitude|default:"—" }}, {{ incident.longitude|default:"—" }}</p>
+        <p class="mb-0"><span class="text-muted">Reported</span><br>{{ incident.reported_at|date }} by {{ incident.reported_by|default:"—" }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% if incident.latitude and incident.longitude %}
+  <h5 class="fw-bold mb-2"><i class="bi bi-geo-alt text-primary me-2"></i> Incident location</h5>
+  {% include "map/here_single_map.html" with lat=incident.latitude lng=incident.longitude label=incident.title map_id="here-incident-map" height="300px" %}
+{% endif %}
+{% if incident.photos.all %}
+  <h5 class="fw-bold mb-3"><i class="bi bi-images me-2"></i> Photos</h5>
+  <div class="row g-3 mb-4">
+    {% for p in incident.photos.all %}
+      <div class="col-6 col-md-4"><img src="{{ p.image.url }}" class="img-fluid rounded-3 shadow-sm" alt="{{ p.caption }}"></div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

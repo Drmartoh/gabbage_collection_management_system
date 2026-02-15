@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-graph-up text-primary me-2"></i> Analytics</h1>
+  <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-primary">Back to dashboard</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">📊 Bills status (current cycle)</div>
+      <div class="card-body">
+        <canvas id="chartPie" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">📈 Revenue (last 6 months)</div>
+      <div class="card-body">
+        <canvas id="chartRevenue" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">🚛 Collections count (last 6 months)</div>
+      <div class="card-body">
+        <canvas id="chartCollections" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="text-muted small mt-3">Casual labourer collection logs (last 7 days): <strong>{{ garbage_log_count }}</strong></p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const pieData = {
+    labels: {{ pie_labels_json|safe }},
+    values: {{ pie_values_json|safe }},
+  };
+  const months = {{ months_labels_json|safe }};
+  const revenue = {{ revenue_data_json|safe }};
+  const collections = {{ collection_count_data_json|safe }};
+
+  if (document.getElementById('chartPie')) {
+    new Chart(document.getElementById('chartPie'), {
+      type: 'pie',
+      data: {
+        labels: pieData.labels,
+        datasets: [{
+          data: pieData.values,
+          backgroundColor: ['#22c55e', '#f59e0b'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+  }
+  if (document.getElementById('chartRevenue')) {
+    new Chart(document.getElementById('chartRevenue'), {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Revenue (KES)',
+          data: revenue,
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          fill: true,
+          tension: 0.3,
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
+  if (document.getElementById('chartCollections')) {
+    new Chart(document.getElementById('chartCollections'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Collections',
+          data: collections,
+          backgroundColor: 'rgba(99, 102, 241, 0.6)',
+          borderColor: '#6366f1',
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
+})();
+</script>
+{% endblock %}

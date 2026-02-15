@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Carts{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-basket text-success me-2"></i> Carts</h1>
+  <a href="{% url 'core:cart_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Cart</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Code</th><th>Route</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for c in carts %}
+            <tr>
+              <td class="fw-500">{{ c.code }}</td>
+              <td>{{ c.route|default:"—" }}</td>
+              <td><span class="badge bg-{% if c.status == 'active' %}success{% elif c.status == 'maintenance' %}warning text-dark{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></td>
+              <td>
+                <a href="{% url 'core:cart_edit' c.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'core:cart_delete' c.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-5">No carts yet. <a href="{% url 'core:cart_create' %}">Add one</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

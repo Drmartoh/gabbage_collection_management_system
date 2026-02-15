@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Landlords{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-building text-success me-2"></i> Landlords</h1>
+  <a href="{% url 'properties:landlord_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Landlord</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Properties</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in landlords %}
+            <tr>
+              <td class="fw-500"><a href="{% url 'properties:landlord_detail' l.pk %}" class="text-decoration-none">{{ l.full_name }}</a></td>
+              <td>{{ l.phone }}</td>
+              <td>{{ l.email|default:"—" }}</td>
+              <td>{{ l.properties.count }}</td>
+              <td>{% if l.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'properties:landlord_detail' l.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                <a href="{% url 'properties:landlord_edit' l.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'properties:landlord_delete' l.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-building display-6 d-block mb-2 opacity-50"></i>
+                <p class="mb-0">No landlords yet. <a href="{% url 'properties:landlord_create' %}">Add one</a>.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

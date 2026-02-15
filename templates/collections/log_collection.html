@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Log collection{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-check-circle text-success me-2"></i> Log collection</h1>
+<p class="text-muted mb-4">Property: <strong>{{ record.property.name }}</strong></p>
+<div class="card">
+  <div class="card-body">
+    <form method="post" id="logForm">
+      {% csrf_token %}
+      <div class="mb-4">
+        <label class="form-label fw-bold">GPS (optional)</label>
+        <div class="row g-2">
+          <div class="col"><input type="text" name="latitude" class="form-control" placeholder="Latitude" id="lat"></div>
+          <div class="col"><input type="text" name="longitude" class="form-control" placeholder="Longitude" id="lon"></div>
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="getLocation"><i class="bi bi-geo-alt me-1"></i> Get my location</button>
+        {% if record.property.latitude and record.property.longitude %}
+        <p class="text-muted small mt-2 mb-0">Property location is set; confirm your position on the map below.</p>
+        {% endif %}
+        {% include "map/here_confirm_map.html" with lat_selector="#lat" lng_selector="#lon" initial_lat=record.property.latitude initial_lng=record.property.longitude map_id="here-log-confirm-map" height="240px" %}
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-bold">Notes</label>
+        <textarea name="notes" class="form-control" rows="3" placeholder="Any notes about this collection..."></textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Confirm collection</button>
+        <a href="{% url 'collections:collector_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% block extra_js %}
+<script>
+  document.getElementById('getLocation').onclick = function() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(p) {
+          document.getElementById('lat').value = p.coords.latitude;
+          document.getElementById('lon').value = p.coords.longitude;
+          window.dispatchEvent(new CustomEvent('gcms-location-update'));
+        },
+        function() { alert('Could not get location'); }
+      );
+    }
+  };
+</script>
+{% endblock %}
+{% endblock %}

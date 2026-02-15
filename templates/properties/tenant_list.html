@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Tenants{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-people text-primary me-2"></i> Tenants</h1>
+  <a href="{% url 'properties:landlord_list' %}" class="btn btn-outline-secondary"><i class="bi bi-building me-1"></i> Landlords</a>
+</div>
+<p class="text-muted small mb-3">All tenants across properties. Add or edit tenants from a <a href="{% url 'properties:landlord_list' %}">property</a> (Landlords → Property → Tenants).</p>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>House no.</th>
+            <th>Email</th>
+            <th>Property</th>
+            <th>Landlord</th>
+            <th>Rate</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tenants %}
+            <tr>
+              <td class="fw-500">{{ t.full_name }}</td>
+              <td>{{ t.phone|default:"—" }}</td>
+              <td>{{ t.house_no|default:"—" }}</td>
+              <td>{{ t.email|default:"—" }}</td>
+              <td><a href="{% url 'properties:property_detail' t.property_id %}" class="text-decoration-none">{{ t.property.name }}</a></td>
+              <td><a href="{% url 'properties:landlord_detail' t.property.landlord_id %}" class="text-decoration-none">{{ t.property.landlord.full_name }}</a></td>
+              <td>{% if t.monthly_rate %}KES {{ t.monthly_rate }}{% else %}<span class="text-muted">Standard</span>{% endif %}</td>
+              <td>{% if t.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'properties:property_detail' t.property_id %}" class="btn btn-sm btn-outline-primary">Property</a>
+                <a href="{% url 'properties:tenant_edit' t.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">
+                <i class="bi bi-people display-6 d-block mb-2 opacity-50"></i>
+                <p class="mb-0">No tenants yet. Add tenants from a <a href="{% url 'properties:landlord_list' %}">Landlord → Property</a>.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-3" aria-label="Tenants pagination">
+  <ul class="pagination justify-content-center mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

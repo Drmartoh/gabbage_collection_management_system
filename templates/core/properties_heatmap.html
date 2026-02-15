@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Properties map{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <h1 class="page-title mb-0"><i class="bi bi-map-fill text-primary me-2"></i> Properties map</h1>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="position-relative" style="max-width: 380px;">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" id="gcms-properties-map-search" placeholder="Type address or place…" autocomplete="off" aria-label="Search on map" aria-autocomplete="list" aria-expanded="false" aria-controls="gcms-properties-map-suggestions">
+      </div>
+      <div id="gcms-properties-map-suggestions" class="list-group position-absolute top-100 start-0 end-0 mt-1 shadow-sm rounded overflow-hidden d-none" style="z-index: 1050; max-height: 260px; overflow-y: auto;" role="listbox"></div>
+    </div>
+    <span id="gcms-properties-map-search-status" class="small text-muted" aria-live="polite"></span>
+    <span id="gcms-heat-wrap">
+      <label class="form-check-label small mb-0">
+        <input type="checkbox" class="form-check-input" id="gcms-heat-toggle" checked> Heat map
+      </label>
+    </span>
+    <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+</div>
+<p class="text-muted small mb-3">All registered properties with location. Click a marker to see landlord and property details. Use the search bar to find an address.</p>
+{% if not places %}
+<p class="alert alert-info small">No properties with coordinates yet. Add latitude/longitude when <a href="{% url 'properties:landlord_list' %}">creating or editing properties</a>, or use <strong>Search location (HERE)</strong> on the property form.</p>
+{% endif %}
+<div class="gcms-heatmap-wrap rounded-3 overflow-hidden shadow-sm" style="height: calc(100vh - 220px); min-height: 400px;">
+  <div id="gcms-properties-map" class="w-100 h-100"></div>
+</div>
+<div id="gcms-detail-panel" class="card mt-3 d-none">
+  <div class="card-header d-flex align-items-center justify-content-between py-2">
+    <span class="fw-bold" id="gcms-detail-title">Property details</span>
+    <button type="button" class="btn-close btn-sm" aria-label="Close" id="gcms-detail-close"></button>
+  </div>
+  <div class="card-body py-3" id="gcms-detail-body"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if HERE_API_KEY %}
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-data.js" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var placesData = {{ places_json|safe }};
+  var container = document.getElementById('gcms-properties-map');
+  if (!container || !apiKey) return;
+
+  var map = container._gcmsHereMap;
+  if (!map) {
+    var platform = new H.service.Platform({ apikey: apiKey });
+    var defaultLayers = platform.createDefaultLayers();
+    var defaultCenter = { lat: -1.2921, lng: 36.8219 };
+    var zoom = 12;
+    if (placesData.length) {
+      var first = placesData[0];
+      defaultCenter = { lat: first.lat, lng: first.lng };
+      if (placesData.length === 1) zoom = 15;
+    }
+    map = new H.Map(container, defaultLayers.vector.normal.map, { center: defaultCenter, zoom: zoom });
+    container._gcmsHereMap = map;
+    new H.mapevents.MapEvents(map);
+    new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+    var ui = H.ui.UI.createDefault(map, defaultLayers);
+  }
+
+  var searchMarker = null;
+  var suggestDebounce = null;
+  var currentSuggestions = [];
+  var searchInput = document.getElementById('gcms-properties-map-search');
+  var suggestList = document.getElementById('gcms-properties-map-suggestions');
+  var mapCenter = placesData.length ? (placesData[0].lat + ',' + placesData[0].lng) : '-1.2921,36.8219';
+
+  function setSearchStatus(msg, isErr) {
+    var el = document.getElementById('gcms-properties-map-search-status');
+    if (el) { el.textContent = msg; el.className = 'small ' + (isErr ? 'text-danger' : 'text-muted'); }
+  }
+  function hideSuggestions() {
+    if (suggestList) { suggestList.classList.add('d-none'); suggestList.innerHTML = ''; }
+    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
+    currentSuggestions = [];
+  }
+  function showOnMap(pos, label) {
+    if (!pos || pos.lat == null || pos.lng == null) return;
+    setSearchStatus(label ? 'Showing: ' + label : 'Location set.');
+    if (searchMarker) map.removeObject(searchMarker);
+    searchMarker = new H.map.Marker({ lat: pos.lat, lng: pos.lng });
+    map.addObject(searchMarker);
+    map.getViewModel().setLookAtData({ center: { lat: pos.lat, lng: pos.lng }, zoom: 16 });
+  }
+  function selectSuggestion(item) {
+    var label = (item.address && item.address.label) || item.title || '';
+    if (item.position && item.position.lat != null && item.position.lng != null) {
+      searchInput.value = label;
+      hideSuggestions();
+      showOnMap(item.position, label);
+      return;
+    }
+    setSearchStatus('Searching…');
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(label || item.title || '') + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var first = data.items && data.items[0];
+        if (first && first.position) {
+          searchInput.value = (first.address && first.address.label) || label;
+          hideSuggestions();
+          showOnMap(first.position, (first.address && first.address.label) || label);
+        } else setSearchStatus('Could not find location.');
+      }).catch(function() { setSearchStatus('Search failed.'); });
+  }
+  function fetchSuggestions(q) {
+    if (!q || q.length < 2) { hideSuggestions(); return; }
+    fetch('https://autosuggest.search.hereapi.com/v1/autosuggest?q=' + encodeURIComponent(q) + '&at=' + mapCenter + '&apikey=' + encodeURIComponent(apiKey) + '&limit=8')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var items = (data.items || []).filter(function(it) { return it.title || (it.address && it.address.label); });
+        currentSuggestions = items;
+        if (!suggestList) return;
+        suggestList.innerHTML = '';
+        if (!items.length) { suggestList.classList.add('d-none'); searchInput.setAttribute('aria-expanded', 'false'); return; }
+        items.forEach(function(item) {
+          var label = (item.address && item.address.label) || item.title || 'Unknown';
+          var div = document.createElement('div');
+          div.className = 'list-group-item list-group-item-action';
+          div.setAttribute('role', 'option');
+          div.textContent = label;
+          div.addEventListener('click', function() { selectSuggestion(item); });
+          suggestList.appendChild(div);
+        });
+        suggestList.classList.remove('d-none');
+        searchInput.setAttribute('aria-expanded', 'true');
+      }).catch(function() { hideSuggestions(); });
+  }
+  function onSearchInput() {
+    var q = (searchInput.value || '').trim();
+    if (suggestDebounce) clearTimeout(suggestDebounce);
+    if (!q) { hideSuggestions(); return; }
+    suggestDebounce = setTimeout(function() { fetchSuggestions(q); }, 280);
+  }
+  function runGeocodeAndShow() {
+    var q = (searchInput.value || '').trim();
+    if (!q) { setSearchStatus('Type an address or place.'); return; }
+    setSearchStatus('Searching…');
+    hideSuggestions();
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(q) + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); }).then(function(data) {
+        var item = data.items && data.items[0];
+        if (!item || !item.position) { setSearchStatus('No results found.'); return; }
+        showOnMap(item.position, (item.address && item.address.label) || item.title);
+      }).catch(function() { setSearchStatus('Search failed.'); });
+  }
+  searchInput.addEventListener('input', onSearchInput);
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { hideSuggestions(); searchInput.blur(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (currentSuggestions.length) selectSuggestion(currentSuggestions[0]); else runGeocodeAndShow(); }
+  });
+  searchInput.addEventListener('focus', function() { if ((searchInput.value || '').trim().length >= 2 && currentSuggestions.length) suggestList.classList.remove('d-none'); });
+  document.addEventListener('click', function(e) {
+    if (suggestList && searchInput && !suggestList.contains(e.target) && e.target !== searchInput && !searchInput.closest('.position-relative').contains(e.target)) hideSuggestions();
+  });
+
+  var heatmapLayer = null;
+  var heatmapProvider = null;
+  function updateHeatmap(show) {
+    if (!placesData.length) return;
+    if (show && typeof H !== 'undefined' && H.data && H.data.heatmap) {
+      try {
+        if (!heatmapProvider) {
+          var heatData = placesData.map(function(p) { return { lat: p.lat, lng: p.lng, weight: 1 }; });
+          heatmapProvider = new H.data.heatmap.Provider(heatData, { max: 2, radius: 40 });
+          heatmapLayer = new H.map.layer.TileLayer(heatmapProvider);
+          map.addLayer(heatmapLayer);
+        }
+        heatmapLayer.setVisibility(show);
+      } catch (e) {}
+    } else if (heatmapLayer) {
+      heatmapLayer.setVisibility(false);
+    }
+  }
+
+  var markers = [];
+  var detailPanel = document.getElementById('gcms-detail-panel');
+  var detailTitle = document.getElementById('gcms-detail-title');
+  var detailBody = document.getElementById('gcms-detail-body');
+  var detailClose = document.getElementById('gcms-detail-close');
+  function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function showDetails(place) {
+    detailTitle.textContent = place.name;
+    var html = '<p class="mb-1"><strong>Property</strong><br>' + esc(place.name);
+    if (place.plot_number) html += ' (Plot: ' + esc(place.plot_number) + ')';
+    html += '</p>';
+    if (place.address) html += '<p class="mb-1"><strong>Address</strong><br>' + esc(place.address) + '</p>';
+    html += '<p class="mb-1"><strong>Landlord</strong><br>' + esc(place.landlord_name) + '</p>';
+    if (place.landlord_phone) html += '<p class="mb-1"><strong>Phone</strong><br>' + esc(place.landlord_phone) + '</p>';
+    if (place.landlord_email) html += '<p class="mb-1"><strong>Email</strong><br>' + esc(place.landlord_email) + '</p>';
+    if (place.landlord_address) html += '<p class="mb-1"><strong>Landlord address</strong><br>' + esc(place.landlord_address) + '</p>';
+    if (place.route_name) html += '<p class="mb-1"><strong>Route</strong><br>' + esc(place.route_name) + '</p>';
+    if (place.zone_name) html += '<p class="mb-1"><strong>Zone</strong><br>' + esc(place.zone_name) + '</p>';
+    html += '<p class="mb-2"><strong>Tenants</strong><br>' + esc(String(place.tenant_count)) + ' (billing units)</p>';
+    html += '<a href="' + esc(place.property_url) + '" class="btn btn-primary btn-sm">View property</a>';
+    detailBody.innerHTML = html;
+    detailPanel.classList.remove('d-none');
+  }
+  if (detailClose) detailClose.addEventListener('click', function() { detailPanel.classList.add('d-none'); });
+
+  placesData.forEach(function(place) {
+    var marker = new H.map.Marker({ lat: place.lat, lng: place.lng });
+    marker.setData(place);
+    marker.addEventListener('tap', function() {
+      showDetails(place);
+      map.getViewModel().setLookAtData({ center: { lat: place.lat, lng: place.lng }, zoom: 17 });
+    });
+    map.addObject(marker);
+    markers.push(marker);
+  });
+
+  if (placesData.length > 1) {
+    var minLat = placesData[0].lat, maxLat = placesData[0].lat, minLng = placesData[0].lng, maxLng = placesData[0].lng;
+    placesData.forEach(function(p) {
+      if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng;
+    });
+    var rect = new H.geo.Rect(maxLat, minLng, minLat, maxLng);
+    map.getViewModel().setLookAtData({ bounds: rect });
+  }
+
+  if (typeof H.data !== 'undefined' && H.data.heatmap) {
+    updateHeatmap(true);
+    document.getElementById('gcms-heat-toggle').addEventListener('change', function() {
+      updateHeatmap(this.checked);
+    });
+  } else {
+    var heatWrap = document.getElementById('gcms-heat-wrap');
+    if (heatWrap) heatWrap.classList.add('d-none');
+  }
+
+  window.addEventListener('resize', function() { map.getViewPort().resize(); });
+})();
+</script>
+{% else %}
+<p class="text-muted">Set HERE_API_KEY in .env to show the properties map.</p>
+{% endif %}
+{% endblock %}

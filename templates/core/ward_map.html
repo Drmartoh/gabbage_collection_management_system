@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Ward map — Kikuyu Constituency, Karai Ward{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <h1 class="page-title mb-0"><i class="bi bi-geo-alt-fill text-primary me-2"></i> Kikuyu Constituency · Karai Ward</h1>
+  <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+</div>
+<p class="text-muted small mb-3">Live map view for Karai Ward, Kiambu County.</p>
+{% if HERE_API_KEY %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3 position-relative">
+  <div class="position-relative flex-grow-1" style="max-width: 420px;">
+    <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input type="text" class="form-control" id="gcms-ward-map-search" placeholder="Type address or place (e.g. Karai, Kiambu…)" autocomplete="off" aria-label="Search on map" aria-autocomplete="list" aria-expanded="false" aria-controls="gcms-ward-map-suggestions">
+    </div>
+    <div id="gcms-ward-map-suggestions" class="list-group position-absolute top-100 start-0 end-0 mt-1 shadow-sm rounded overflow-hidden d-none" style="z-index: 1050; max-height: 280px; overflow-y: auto;" role="listbox"></div>
+  </div>
+  <span id="gcms-ward-map-search-status" class="small text-muted" aria-live="polite"></span>
+</div>
+<div class="gcms-ward-map-wrap rounded-3 overflow-hidden shadow-sm bg-light" style="height: 500px; min-height: 400px;">
+  <div id="gcms-ward-map" class="w-100 h-100" style="min-height: 400px;"></div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-map display-4 text-muted"></i>
+    <p class="mt-2 mb-0">Set HERE_API_KEY in .env to show the ward map.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if HERE_API_KEY %}
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var wardCenter = '-1.2463,36.6732';
+  var map = null;
+  var searchMarker = null;
+  var suggestDebounce = null;
+  var currentSuggestions = [];
+  var initRetryTimer = null;
+
+  var inputEl = document.getElementById('gcms-ward-map-search');
+  var listEl = document.getElementById('gcms-ward-map-suggestions');
+
+  function setSearchStatus(msg, isError) {
+    var el = document.getElementById('gcms-ward-map-search-status');
+    if (el) { el.textContent = msg; el.className = 'small ' + (isError ? 'text-danger' : 'text-muted'); }
+  }
+
+  function hideSuggestions() {
+    if (listEl) { listEl.classList.add('d-none'); listEl.innerHTML = ''; }
+    if (inputEl) inputEl.setAttribute('aria-expanded', 'false');
+    currentSuggestions = [];
+  }
+
+  function showOnMap(pos, label) {
+    if (!pos || !pos.lat || !pos.lng) return;
+    setSearchStatus(label ? 'Showing: ' + label : 'Location set.');
+    if (map && typeof H !== 'undefined') {
+      if (searchMarker) map.removeObject(searchMarker);
+      searchMarker = new H.map.Marker({ lat: pos.lat, lng: pos.lng });
+      map.addObject(searchMarker);
+      map.getViewModel().setLookAtData({ center: { lat: pos.lat, lng: pos.lng }, zoom: 16 });
+    }
+  }
+
+  function selectSuggestion(item) {
+    var label = (item.address && item.address.label) || item.title || '';
+    if (item.position && item.position.lat != null && item.position.lng != null) {
+      inputEl.value = label;
+      hideSuggestions();
+      showOnMap(item.position, label);
+      return;
+    }
+    setSearchStatus('Searching…');
+    var q = encodeURIComponent(label || item.title || '');
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + q + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var first = data.items && data.items[0];
+        if (first && first.position) {
+          inputEl.value = (first.address && first.address.label) || label;
+          hideSuggestions();
+          showOnMap(first.position, (first.address && first.address.label) || label);
+        } else { setSearchStatus('Could not find location.'); }
+      })
+      .catch(function() { setSearchStatus('Search failed.'); });
+  }
+
+  function fetchSuggestions(q) {
+    if (!q || q.length < 2) { hideSuggestions(); return; }
+    var url = 'https://autosuggest.search.hereapi.com/v1/autosuggest?q=' + encodeURIComponent(q) + '&at=' + wardCenter + '&apikey=' + encodeURIComponent(apiKey) + '&limit=8';
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      var items = (data.items || []).filter(function(it) { return it.title || (it.address && it.address.label); });
+      currentSuggestions = items;
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      if (!items.length) { listEl.classList.add('d-none'); inputEl.setAttribute('aria-expanded', 'false'); return; }
+      items.forEach(function(item, i) {
+        var label = (item.address && item.address.label) || item.title || 'Unknown';
+        var div = document.createElement('div');
+        div.className = 'list-group-item list-group-item-action';
+        div.setAttribute('role', 'option');
+        div.textContent = label;
+        div.dataset.index = i;
+        div.addEventListener('click', function() { selectSuggestion(item); });
+        listEl.appendChild(div);
+      });
+      listEl.classList.remove('d-none');
+      inputEl.setAttribute('aria-expanded', 'true');
+    }).catch(function() { hideSuggestions(); });
+  }
+
+  function onInput() {
+    var q = (inputEl.value || '').trim();
+    if (suggestDebounce) clearTimeout(suggestDebounce);
+    if (!q) { hideSuggestions(); return; }
+    suggestDebounce = setTimeout(function() { fetchSuggestions(q); }, 280);
+  }
+
+  function runGeocodeAndShow() {
+    var q = (inputEl.value || '').trim();
+    if (!q) { setSearchStatus('Type an address or place.'); return; }
+    setSearchStatus('Searching…');
+    hideSuggestions();
+    fetch('https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(q) + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var item = data.items && data.items[0];
+        if (!item || !item.position) { setSearchStatus('No results found.'); return; }
+        var label = (item.address && item.address.label) || item.title || q;
+        showOnMap(item.position, label);
+      })
+      .catch(function() { setSearchStatus('Search failed.'); });
+  }
+
+  function onKeydown(e) {
+    if (e.key === 'Escape') { hideSuggestions(); inputEl.blur(); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentSuggestions.length) selectSuggestion(currentSuggestions[0]);
+      else runGeocodeAndShow();
+      return;
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    if (listEl && inputEl && !listEl.contains(e.target) && e.target !== inputEl && !inputEl.parentNode.contains(e.target)) hideSuggestions();
+  });
+
+  if (inputEl) {
+    inputEl.addEventListener('input', onInput);
+    inputEl.addEventListener('keydown', onKeydown);
+    inputEl.addEventListener('focus', function() { if ((inputEl.value || '').trim().length >= 2 && currentSuggestions.length && listEl) listEl.classList.remove('d-none'); });
+  }
+
+  function initWardMap() {
+    var container = document.getElementById('gcms-ward-map');
+    if (!container || !apiKey) return;
+    if (container._gcmsHereMap) {
+      map = container._gcmsHereMap;
+      return;
+    }
+    if (container._gcmsHereMapPending) return;
+    if (typeof H === 'undefined' || !H.service || typeof H.service.Platform !== 'function') {
+      if (initRetryTimer) clearTimeout(initRetryTimer);
+      initRetryTimer = setTimeout(initWardMap, 150);
+      return;
+    }
+    container._gcmsHereMapPending = true;
+    try {
+      var platform = new H.service.Platform({ apikey: apiKey });
+      var defaultLayers = platform.createDefaultLayers();
+      var center = { lat: -1.2463, lng: 36.6732 };
+      map = new H.Map(container, defaultLayers.vector.normal.map, { center: center, zoom: 13 });
+      container._gcmsHereMap = map;
+      container._gcmsHereMapPending = false;
+      new H.mapevents.MapEvents(map);
+      new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+      var marker = new H.map.Marker({ lat: center.lat, lng: center.lng });
+      map.addObject(marker);
+      window.addEventListener('resize', function() { map.getViewPort().resize(); });
+      setTimeout(function() { map.getViewPort().resize(); }, 100);
+    } catch (e) {
+      var isAlreadyInUse = String(e.message || '').indexOf('already in use') !== -1;
+      if (!isAlreadyInUse) container._gcmsHereMapPending = false;
+      console.error('HERE ward map init error:', e);
+      if (!isAlreadyInUse) {
+        if (initRetryTimer) clearTimeout(initRetryTimer);
+        initRetryTimer = setTimeout(initWardMap, 300);
+      }
+    }
+  }
+  function runInit() {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initWardMap);
+    else initWardMap();
+  }
+  runInit();
+})();
+</script>
+{% endif %}
+{% endblock %}

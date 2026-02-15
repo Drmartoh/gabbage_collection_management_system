@@ -1,0 +1,58 @@
+{% comment %}
+  HERE address search: user types address, clicks Search, we geocode and fill form fields.
+  Requires: HERE_API_KEY in context.
+  Optional: address_selector, lat_selector, lng_selector (defaults id_physical_address, id_latitude, id_longitude).
+  Set address_selector to "" to only fill lat/lng (e.g. incident form).
+{% endcomment %}
+{% if HERE_API_KEY %}
+<div class="gcms-here-address-search mb-3">
+  <label class="form-label fw-bold">Search location (HERE)</label>
+  <div class="input-group">
+    <input type="text" class="form-control" id="gcms-here-address-query" placeholder="e.g. Karai, Kiambu or full address" autocomplete="off">
+    <button type="button" class="btn btn-outline-primary" id="gcms-here-geocode-btn"><i class="bi bi-geo-alt me-1"></i> Search</button>
+  </div>
+  <div id="gcms-here-geocode-status" class="form-text small mt-1" aria-live="polite"></div>
+</div>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var addressSelector = '{{ address_selector|default:"#id_physical_address"|escapejs }}';
+  var latSelector = '{{ lat_selector|default:"#id_latitude"|escapejs }}';
+  var lngSelector = '{{ lng_selector|default:"#id_longitude"|escapejs }}';
+  var queryEl = document.getElementById('gcms-here-address-query');
+  var statusEl = document.getElementById('gcms-here-geocode-status');
+  var btn = document.getElementById('gcms-here-geocode-btn');
+  if (!queryEl || !btn || !apiKey) return;
+  function byId(id) { return document.getElementById(id); }
+  function bySelector(sel) {
+    if (sel && sel.charAt(0) === '#') return byId(sel.slice(1));
+    return sel ? document.querySelector(sel) : null;
+  }
+  function setStatus(msg, isError) {
+    if (statusEl) { statusEl.textContent = msg; statusEl.className = 'form-text small mt-1' + (isError ? ' text-danger' : ''); }
+  }
+  btn.addEventListener('click', function() {
+    var q = (queryEl.value || '').trim();
+    if (!q) { setStatus('Enter an address or place name.', true); return; }
+    setStatus('Searching…');
+    var url = 'https://geocode.search.hereapi.com/v1/geocode?q=' + encodeURIComponent(q) + '&apikey=' + encodeURIComponent(apiKey) + '&limit=1';
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      var item = data.items && data.items[0];
+      if (!item || !item.position) { setStatus('No results found. Try a different address.', true); return; }
+      var pos = item.position;
+      var addr = (item.address && (item.address.label || item.address.street + ', ' + (item.address.city || item.address.county || ''))) || q;
+      var latIn = bySelector(latSelector);
+      var lngIn = bySelector(lngSelector);
+      if (latIn) latIn.value = pos.lat;
+      if (lngIn) lngIn.value = pos.lng;
+      if (addressSelector) {
+        var addrIn = bySelector(addressSelector);
+        if (addrIn) addrIn.value = addr;
+      }
+      setStatus('Location set: ' + pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5));
+    }).catch(function() { setStatus('Geocoding failed. Check connection or try again.', true); });
+  });
+  queryEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } });
+})();
+</script>
+{% endif %}

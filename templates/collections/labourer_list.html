@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Casual labourers{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-people me-2"></i> Casual labourers</h1>
+  <a href="{% url 'collections:labourer_create' %}" class="btn btn-primary">Add labourer</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>ID</th>
+          <th>User</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in labourers %}
+        <tr>
+          <td>{{ l.full_name }}</td>
+          <td>{{ l.phone }}</td>
+          <td>{{ l.id_number|default:"—" }}</td>
+          <td>{% if l.user %}{{ l.user.get_display_name }}{% else %}—{% endif %}</td>
+          <td>{% if l.is_active %}Active{% else %}Inactive{% endif %}</td>
+          <td>
+            <a href="{% url 'collections:labourer_edit' l.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'collections:labourer_delete' l.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-5">No labourers yet. <a href="{% url 'collections:labourer_create' %}">Add one</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if page_obj %}{% include "pagination.html" with page_obj=page_obj %}{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Delete labourer{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-person-x me-2"></i> Remove casual labourer</h1>
+  <a href="{% url 'collections:labourer_list' %}" class="btn btn-outline-primary">Back</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <p>Remove <strong>{{ labourer.full_name }}</strong>? This does not delete user accounts or payment history.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Delete</button>
+      <a href="{% url 'collections:labourer_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

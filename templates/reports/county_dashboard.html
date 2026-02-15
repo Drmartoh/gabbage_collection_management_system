@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}County dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0">
+    <i class="bi bi-speedometer2 text-success me-2"></i> County dashboard
+  </h1>
+  <span class="badge bg-secondary">Read-only</span>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white">
+      <div class="card-body">
+        <p class="stat-label mb-1"><i class="bi bi-geo-alt text-primary me-1"></i> Wards</p>
+        <p class="stat-value text-primary mb-0">{{ wards }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white">
+      <div class="card-body">
+        <p class="stat-label mb-1"><i class="bi bi-signpost-2 text-success me-1"></i> Routes</p>
+        <p class="stat-value text-success mb-0">{{ routes }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white">
+      <div class="card-body">
+        <p class="stat-label mb-1"><i class="bi bi-building text-info me-1"></i> Properties</p>
+        <p class="stat-value text-info mb-0">{{ properties }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card bg-white">
+      <div class="card-body">
+        <p class="stat-label mb-1"><i class="bi bi-exclamation-triangle text-warning me-1"></i> Open incidents</p>
+        <p class="stat-value text-warning mb-0">{{ open_incidents }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex align-items-center">
+    <i class="bi bi-currency-exchange text-primary me-2"></i>
+    Billing summary
+  </div>
+  <div class="card-body">
+    <p class="mb-2"><span class="text-muted">Cycle:</span> <strong>{% if current_cycle %}{{ current_cycle }}{% else %}—{% endif %}</strong></p>
+    <p class="mb-2"><span class="text-muted">Total billed:</span> <strong class="text-success">KES {{ total_billed|floatformat:0|intcomma }}</strong></p>
+    <p class="mb-0"><span class="text-muted">Total paid:</span> <strong>KES {{ total_paid|floatformat:0|intcomma }}</strong></p>
+  </div>
+</div>
+{% endblock %}

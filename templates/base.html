@@ -1,0 +1,685 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ GCMS_SITE_NAME }}{% endblock %} · {{ GCMS_WARD }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    /* ----- Light theme (default) ----- */
+    :root {
+      --gcms-primary: #6366f1;
+      --gcms-primary-dark: #4f46e5;
+      --gcms-primary-light: #e0e7ff;
+      --gcms-primary-glow: rgba(99, 102, 241, 0.3);
+      --gcms-accent: #f59e0b;
+      --gcms-accent-soft: #fef3c7;
+      --gcms-bg: #f8fafc;
+      --gcms-bg-gradient: linear-gradient(145deg, #f0f4ff 0%, #f8fafc 40%, #fefce8 100%);
+      --gcms-surface: #ffffff;
+      --gcms-surface-elevated: rgba(255,255,255,0.9);
+      --gcms-text: #1e293b;
+      --gcms-text-secondary: #334155;
+      --gcms-muted: #64748b;
+      --gcms-border: rgba(99, 102, 241, 0.1);
+      --gcms-radius: 1.25rem;
+      --gcms-radius-sm: 0.875rem;
+      --gcms-radius-lg: 1.5rem;
+      --gcms-shadow: 0 2px 12px rgba(99, 102, 241, 0.06);
+      --gcms-shadow-md: 0 8px 28px -8px rgba(99, 102, 241, 0.15);
+      --gcms-shadow-lg: 0 20px 48px -12px rgba(30, 41, 59, 0.15);
+      --gcms-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --font-heading: 'Outfit', system-ui, sans-serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+    }
+    /* ----- Dark theme ----- */
+    [data-theme="dark"] {
+      --gcms-primary: #818cf8;
+      --gcms-primary-dark: #6366f1;
+      --gcms-primary-light: rgba(129, 140, 248, 0.2);
+      --gcms-primary-glow: rgba(129, 140, 248, 0.25);
+      --gcms-accent: #fbbf24;
+      --gcms-accent-soft: rgba(251, 191, 36, 0.15);
+      --gcms-bg: #0f172a;
+      --gcms-bg-gradient: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      --gcms-surface: #1e293b;
+      --gcms-surface-elevated: rgba(30, 41, 59, 0.95);
+      --gcms-text: #f1f5f9;
+      --gcms-text-secondary: #cbd5e1;
+      --gcms-muted: #94a3b8;
+      --gcms-border: rgba(148, 163, 184, 0.15);
+      --gcms-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      --gcms-shadow-md: 0 8px 28px -8px rgba(0, 0, 0, 0.4);
+      --gcms-shadow-lg: 0 20px 48px -12px rgba(0, 0, 0, 0.5);
+    }
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .navbar { --bs-body-bg: var(--gcms-surface); }
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select {
+      background: #334155;
+      border-color: var(--gcms-border);
+      color: var(--gcms-text);
+    }
+    [data-theme="dark"] .form-control::placeholder { color: var(--gcms-muted); }
+    [data-theme="dark"] .table { color: var(--gcms-text); }
+    [data-theme="dark"] .table thead th { background: rgba(51, 65, 85, 0.8); color: var(--gcms-muted); }
+    [data-theme="dark"] .table-hover tbody tr:hover { background: rgba(51, 65, 85, 0.5); }
+    [data-theme="dark"] .bg-light { background: rgba(51, 65, 85, 0.4) !important; }
+    * { font-family: var(--font-body); box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--gcms-bg);
+      background-image: var(--gcms-bg-gradient);
+      background-attachment: fixed;
+      color: var(--gcms-text);
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* Animated background orbs */
+    .gcms-bg-animation {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .gcms-bg-animation .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+      animation: float 20s ease-in-out infinite;
+    }
+    [data-theme="dark"] .gcms-bg-animation .orb { opacity: 0.25; }
+    .gcms-bg-animation .orb-1 { width: 320px; height: 320px; background: var(--gcms-primary); top: -10%; left: -5%; animation-delay: 0s; }
+    .gcms-bg-animation .orb-2 { width: 280px; height: 280px; background: var(--gcms-accent); top: 40%; right: -8%; animation-delay: -7s; animation-duration: 25s; }
+    .gcms-bg-animation .orb-3 { width: 200px; height: 200px; background: var(--gcms-primary); bottom: -5%; left: 30%; animation-delay: -14s; animation-duration: 22s; }
+    .gcms-bg-animation .orb-4 { width: 160px; height: 160px; background: var(--gcms-accent); top: 60%; left: -3%; animation-delay: -5s; animation-duration: 18s; }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -40px) scale(1.05); }
+      50% { transform: translate(-20px, 20px) scale(0.95); }
+      75% { transform: translate(40px, 30px) scale(1.02); }
+    }
+    .gcms-content-wrap { position: relative; z-index: 1; }
+    h1, h2, h3, h4, h5, h6, .navbar-brand, .page-title, .fw-bold { font-family: var(--font-heading); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .navbar {
+      background: var(--gcms-surface-elevated) !important;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 var(--gcms-border);
+      padding: 0.65rem 0;
+      transition: box-shadow var(--gcms-transition);
+      position: relative;
+      z-index: 2;
+    }
+    .navbar-brand {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+      color: var(--gcms-primary-dark) !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: transform var(--gcms-transition), color var(--gcms-transition);
+    }
+    [data-theme="dark"] .navbar-brand { color: var(--gcms-primary) !important; }
+    .navbar-brand i {
+      font-size: 1.6rem;
+      transition: transform var(--gcms-transition);
+    }
+    .navbar-brand:hover { color: var(--gcms-primary) !important; transform: translateY(-1px); }
+    .navbar-brand:hover i { transform: rotate(-12deg) scale(1.05); }
+    .nav-link {
+      font-weight: 500;
+      font-size: 0.9375rem;
+      color: var(--gcms-muted) !important;
+      border-radius: var(--gcms-radius-sm);
+      padding: 0.5rem 0.85rem !important;
+      transition: color var(--gcms-transition), background var(--gcms-transition), transform 0.2s ease;
+    }
+    .nav-link:hover { color: var(--gcms-primary) !important; background: var(--gcms-primary-light); transform: translateY(-1px); }
+    .nav-link.active { color: var(--gcms-primary) !important; background: var(--gcms-primary-light); }
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--gcms-radius-sm);
+      border: 1px solid var(--gcms-border);
+      background: var(--gcms-surface);
+      color: var(--gcms-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--gcms-transition), background var(--gcms-transition), transform 0.2s ease;
+    }
+    .theme-toggle:hover { color: var(--gcms-primary); background: var(--gcms-primary-light); transform: scale(1.05); }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: inline-block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: inline-block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+    [data-theme="dark"] .navbar-toggler { border-color: var(--gcms-border); }
+    [data-theme="dark"] .navbar-toggler-icon { filter: invert(1); }
+    /* Menu button (always visible, opens side panel) */
+    .gcms-menu-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--gcms-radius-sm);
+      border: 1px solid var(--gcms-border);
+      background: var(--gcms-surface);
+      color: var(--gcms-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      transition: color var(--gcms-transition), background var(--gcms-transition), transform 0.2s ease;
+    }
+    .gcms-menu-btn:hover { color: var(--gcms-primary); background: var(--gcms-primary-light); transform: scale(1.05); }
+    /* Side panel (offcanvas) */
+    .gcms-sidebar .offcanvas-body { padding: 0.75rem 0; overflow-y: auto; }
+    .gcms-sidebar .nav-link {
+      padding: 0.6rem 1.25rem !important;
+      border-radius: 0;
+      border-left: 3px solid transparent;
+    }
+    .gcms-sidebar .nav-link:hover { border-left-color: var(--gcms-primary); }
+    .gcms-sidebar .nav-link i { width: 1.4em; text-align: center; }
+    .gcms-sidebar .sidebar-section {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gcms-muted);
+      padding: 0.75rem 1.25rem 0.35rem;
+      border-bottom: 1px solid var(--gcms-border);
+      margin-bottom: 0.25rem;
+    }
+    .gcms-sidebar .sidebar-section:first-child { padding-top: 0; }
+    .gcms-sidebar .list-group-item {
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+    }
+    .gcms-sidebar .list-group-item .nav-link { display: block; }
+    .breadcrumb-item a { color: var(--gcms-primary); text-decoration: none; }
+    .breadcrumb-item.active { color: var(--gcms-muted); }
+    .gcms-sidebar.offcanvas { background: var(--gcms-surface-elevated); border-right: 1px solid var(--gcms-border); }
+    .gcms-sidebar .offcanvas-header { background: var(--gcms-surface); }
+    [data-theme="dark"] .gcms-sidebar.offcanvas { background: var(--gcms-surface); }
+    @media (min-width: 992px) {
+      .gcms-sidebar.offcanvas { width: 280px; }
+    }
+    @media (max-width: 991.98px) {
+      .gcms-sidebar.offcanvas { max-width: 85vw; }
+    }
+    main {
+      flex: 1;
+      padding: 2rem 0;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .card {
+      border: 1px solid var(--gcms-border);
+      border-radius: var(--gcms-radius);
+      box-shadow: var(--gcms-shadow);
+      background: var(--gcms-surface);
+      transition: box-shadow var(--gcms-transition), transform var(--gcms-transition), border-color 0.2s;
+      overflow: hidden;
+    }
+    .card:hover { box-shadow: var(--gcms-shadow-md); }
+    .card-header {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 1rem;
+      background: transparent;
+      border-bottom: 1px solid var(--gcms-border);
+      padding: 1rem 1.25rem;
+      border-radius: var(--gcms-radius) var(--gcms-radius) 0 0;
+      color: var(--gcms-text);
+    }
+    .card-body { padding: 1.35rem; color: var(--gcms-text); }
+    .btn {
+      font-weight: 600;
+      border-radius: var(--gcms-radius-sm);
+      padding: 0.55rem 1.35rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background var(--gcms-transition);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--gcms-primary);
+      border-color: var(--gcms-primary);
+      box-shadow: 0 2px 8px var(--gcms-primary-glow);
+    }
+    .btn-primary:hover {
+      background: var(--gcms-primary-dark);
+      border-color: var(--gcms-primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--gcms-primary-glow);
+    }
+    .btn-outline-primary {
+      border-width: 2px;
+      border-color: var(--gcms-primary);
+      color: var(--gcms-primary);
+    }
+    .btn-outline-primary:hover {
+      background: var(--gcms-primary-light);
+      border-color: var(--gcms-primary);
+      color: var(--gcms-primary-dark);
+      transform: translateY(-2px);
+    }
+    .form-control, .form-select {
+      border-radius: var(--gcms-radius-sm);
+      border: 1.5px solid var(--gcms-border);
+      background: var(--gcms-surface);
+      padding: 0.6rem 1rem;
+      transition: border-color var(--gcms-transition), box-shadow var(--gcms-transition);
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--gcms-primary);
+      box-shadow: 0 0 0 4px var(--gcms-primary-glow);
+    }
+    .page-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.85rem;
+      letter-spacing: -0.02em;
+      color: var(--gcms-text);
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      border-radius: var(--gcms-radius);
+      border: 1px solid var(--gcms-border);
+      background: var(--gcms-surface);
+      padding: 1.35rem;
+      transition: transform var(--gcms-transition), box-shadow var(--gcms-transition);
+      animation: fadeInUp 0.5s ease-out backwards;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--gcms-shadow-md);
+    }
+    .stat-card .stat-value { font-family: var(--font-heading); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.02em; }
+    .stat-card .stat-label { font-size: 0.875rem; color: var(--gcms-muted); font-weight: 500; }
+    .footer-gcms {
+      padding: 1.15rem 0;
+      font-size: 0.8125rem;
+      color: var(--gcms-muted);
+      background: var(--gcms-surface-elevated);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid var(--gcms-border);
+      position: relative;
+      z-index: 1;
+    }
+    .alert {
+      border-radius: var(--gcms-radius-sm);
+      border: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .table { border-radius: var(--gcms-radius); overflow: hidden; background: var(--gcms-surface); }
+    .table-hover tbody tr { transition: background-color 0.2s ease; }
+    .table thead th {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--gcms-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--gcms-primary-light);
+    }
+    [data-theme="dark"] .table thead th { background: rgba(51, 65, 85, 0.9); }
+    .badge { font-weight: 600; padding: 0.4em 0.75em; border-radius: 9999px; font-size: 0.75rem; }
+    .dropdown-menu {
+      border-radius: var(--gcms-radius-sm);
+      border: 1px solid var(--gcms-border);
+      box-shadow: var(--gcms-shadow-lg);
+      padding: 0.35rem;
+      animation: scaleIn 0.2s ease-out;
+      background: var(--gcms-surface);
+    }
+    .dropdown-item {
+      font-weight: 500;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.85rem;
+      transition: background 0.15s ease;
+      color: var(--gcms-text);
+    }
+    .dropdown-item:hover { background: var(--gcms-primary-light); color: var(--gcms-primary-dark); }
+    .text-muted { color: var(--gcms-muted) !important; }
+    .gcms-animate-in { animation: fadeInUp 0.5s ease-out backwards; }
+    [data-theme="dark"] .btn-close { filter: invert(1); }
+    [data-theme="dark"] .alert { border: 1px solid var(--gcms-border); }
+    /* ----- Dark mode: ensure all text and surfaces are readable ----- */
+    [data-theme="dark"] body,
+    [data-theme="dark"] main,
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .card-body,
+    [data-theme="dark"] .card-header,
+    [data-theme="dark"] .card-footer,
+    [data-theme="dark"] .page-title,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .stat-card .stat-value,
+    [data-theme="dark"] .stat-card .stat-label { color: var(--gcms-text); }
+    [data-theme="dark"] .modal-content { background: var(--gcms-surface); border-color: var(--gcms-border); color: var(--gcms-text); }
+    [data-theme="dark"] .modal-header,
+    [data-theme="dark"] .modal-title,
+    [data-theme="dark"] .modal-body,
+    [data-theme="dark"] .modal-footer { color: var(--gcms-text); border-color: var(--gcms-border); background: transparent; }
+    [data-theme="dark"] .modal-body p,
+    [data-theme="dark"] .modal-body .text-muted { color: var(--gcms-text-secondary) !important; }
+    [data-theme="dark"] .offcanvas-title { color: var(--gcms-text); }
+    [data-theme="dark"] .dropdown-menu { background: var(--gcms-surface); border-color: var(--gcms-border); }
+    [data-theme="dark"] .dropdown-item { color: var(--gcms-text); }
+    [data-theme="dark"] .dropdown-item:hover { color: var(--gcms-primary); background: var(--gcms-primary-light); }
+    [data-theme="dark"] .dropdown-divider { border-color: var(--gcms-border); }
+    [data-theme="dark"] .alert { color: var(--gcms-text); }
+    [data-theme="dark"] .alert-success { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+    [data-theme="dark"] .alert-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    [data-theme="dark"] .alert-warning { background: rgba(251, 191, 36, 0.2); color: #fde047; }
+    [data-theme="dark"] .alert-info { background: rgba(129, 140, 248, 0.2); color: #c7d2fe; }
+    [data-theme="dark"] .breadcrumb-item { color: var(--gcms-text-secondary); }
+    [data-theme="dark"] .breadcrumb-item.active { color: var(--gcms-muted); }
+    [data-theme="dark"] .breadcrumb-item a { color: var(--gcms-primary); }
+    [data-theme="dark"] .list-group-item { background: transparent; color: var(--gcms-text); border-color: var(--gcms-border); }
+    [data-theme="dark"] .form-label,
+    [data-theme="dark"] .form-text,
+    [data-theme="dark"] label { color: var(--gcms-text-secondary); }
+    [data-theme="dark"] p,
+    [data-theme="dark"] .lead,
+    [data-theme="dark"] small { color: var(--gcms-text); }
+    [data-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.breadcrumb-item a) { color: var(--gcms-primary); }
+    [data-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item):hover { color: var(--gcms-primary-dark); }
+    [data-theme="dark"] .footer-gcms { color: var(--gcms-text-secondary); }
+    [data-theme="dark"] .table td,
+    [data-theme="dark"] .table tbody th { color: var(--gcms-text); }
+    [data-theme="dark"] .badge.bg-primary,
+    [data-theme="dark"] .badge.bg-success,
+    [data-theme="dark"] .badge.bg-danger,
+    [data-theme="dark"] .badge.bg-warning,
+    [data-theme="dark"] .badge.bg-secondary,
+    [data-theme="dark"] .badge.bg-info { color: #fff; }
+    [data-theme="dark"] .badge.bg-light { background: rgba(51, 65, 85, 0.8) !important; color: var(--gcms-text); }
+    [data-theme="dark"] code { color: var(--gcms-accent); background: rgba(51, 65, 85, 0.5); padding: 0.2em 0.4em; border-radius: 0.25rem; }
+    [data-theme="dark"] .text-body { color: var(--gcms-text) !important; }
+    [data-theme="dark"] .text-dark { color: var(--gcms-text) !important; }
+    [data-theme="dark"] .border { border-color: var(--gcms-border) !important; }
+    [data-theme="dark"] .border-top,
+    [data-theme="dark"] .border-bottom,
+    [data-theme="dark"] .border-start,
+    [data-theme="dark"] .border-end { border-color: var(--gcms-border) !important; }
+    [data-theme="dark"] .btn-outline-secondary { border-color: var(--gcms-muted); color: var(--gcms-text-secondary); }
+    [data-theme="dark"] .btn-outline-secondary:hover { background: rgba(51, 65, 85, 0.5); color: var(--gcms-text); border-color: var(--gcms-muted); }
+    [data-theme="dark"] .btn-secondary { background: #475569; border-color: #475569; color: #f1f5f9; }
+    [data-theme="dark"] .btn-secondary:hover { background: #64748b; border-color: #64748b; color: #fff; }
+    [data-theme="dark"] .btn-light { background: rgba(51, 65, 85, 0.8); border-color: var(--gcms-border); color: var(--gcms-text); }
+    [data-theme="dark"] .btn-light:hover { background: rgba(71, 85, 105, 0.9); color: var(--gcms-text); }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="gcms-bg-animation" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+  <div class="gcms-content-wrap">
+  <nav class="navbar navbar-light">
+    <div class="container-fluid">
+      <button class="gcms-menu-btn border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#gcms-sidebar" aria-controls="gcms-sidebar" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+      </button>
+      <a class="navbar-brand me-auto" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">
+        <i class="bi bi-recycle"></i> <span>♻️ GCMS</span>
+      </a>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="theme-toggle" id="gcms-theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <i class="bi bi-sun-fill icon-sun"></i>
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+        </button>
+        {% if user.is_authenticated %}
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+              <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;font-size:14px">
+                <i class="bi bi-person-fill"></i>
+              </span>
+              <span class="d-none d-md-inline">{{ user.get_display_name }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+            </ul>
+          </div>
+        {% else %}
+          <a class="btn btn-primary btn-sm" href="{% url 'accounts:login' %}">Sign in</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Collapsible side panel: all features visible -->
+  <div class="offcanvas offcanvas-start gcms-sidebar" tabindex="-1" id="gcms-sidebar" aria-labelledby="gcms-sidebar-label" data-bs-scroll="true" data-bs-backdrop="true">
+    <div class="offcanvas-header border-bottom" style="border-color: var(--gcms-border) !important;">
+      <h5 class="offcanvas-title" id="gcms-sidebar-label"><i class="bi bi-list me-2"></i> Menu</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+      {% if user.is_authenticated and user.role %}
+        {% if user.role.name == 'super_admin' or user.role.name == 'operations_admin' or user.role.name == 'supervisor' %}
+          <div class="sidebar-section">Overview</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:admin_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:analytics_dashboard' %}"><i class="bi bi-graph-up me-2"></i> Analytics</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:properties_heatmap' %}"><i class="bi bi-map-fill me-2"></i> Properties map</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:ward_map' %}"><i class="bi bi-geo-alt-fill me-2"></i> Ward map</a></li>
+          </ul>
+          <div class="sidebar-section">Operations</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:route_list' %}"><i class="bi bi-signpost-2 me-2"></i> Routes</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'properties:landlord_list' %}"><i class="bi bi-building me-2"></i> Landlords</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'properties:tenant_list' %}"><i class="bi bi-people me-2"></i> Tenants</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:assignment_list' %}"><i class="bi bi-calendar-check me-2"></i> Assignments</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'incidents:incident_list' %}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
+          </ul>
+          <div class="sidebar-section">Areas &amp; assets</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:ward_list' %}"><i class="bi bi-geo-alt me-2"></i> Wards</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:zone_list' %}"><i class="bi bi-grid-3x3 me-2"></i> Zones</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'core:cart_list' %}"><i class="bi bi-basket me-2"></i> Carts</a></li>
+          </ul>
+          <div class="sidebar-section">Billing &amp; finance</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'billing:bill_list' %}"><i class="bi bi-currency-exchange me-2"></i> Billing</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'billing:arrears_list' %}"><i class="bi bi-exclamation-circle me-2"></i> Arrears</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'billing:expense_list' %}"><i class="bi bi-wallet2 me-2"></i> Expenses</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'billing:labourer_payment_list' %}"><i class="bi bi-cash-stack me-2"></i> Payroll</a></li>
+          </ul>
+          <div class="sidebar-section">Labour &amp; collection</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:labourer_list' %}"><i class="bi bi-people me-2"></i> Labourers</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:labourer_rotation_list' %}"><i class="bi bi-arrow-left-right me-2"></i> Rotation</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:garbage_log_list' %}"><i class="bi bi-trash me-2"></i> Collection log</a></li>
+          </ul>
+          <div class="sidebar-section">Reports &amp; admin</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'reports:export_menu' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i> Reports</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'reports:audit_log' %}"><i class="bi bi-journal-text me-2"></i> Audit log</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'notifications:notification_list' %}"><i class="bi bi-bell me-2"></i> Notifications {% if gcms_unread_notifications %}<span class="badge bg-danger rounded-pill ms-1">{{ gcms_unread_notifications }}</span>{% endif %}</a></li>
+          </ul>
+        {% elif user.role.name == 'county_officer' %}
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'reports:county_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'reports:export_menu' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i> Reports</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'notifications:notification_list' %}"><i class="bi bi-bell me-2"></i> Notifications {% if gcms_unread_notifications %}<span class="badge bg-danger rounded-pill ms-1">{{ gcms_unread_notifications }}</span>{% endif %}</a></li>
+          </ul>
+        {% elif user.role.name == 'collector' %}
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:collector_dashboard' %}"><i class="bi bi-truck me-2"></i> My Collections</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'notifications:notification_list' %}"><i class="bi bi-bell me-2"></i> Notifications {% if gcms_unread_notifications %}<span class="badge bg-danger rounded-pill ms-1">{{ gcms_unread_notifications }}</span>{% endif %}</a></li>
+          </ul>
+        {% elif user.role.name == 'casual_labourer' %}
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:garbage_log_list' %}"><i class="bi bi-trash me-2"></i> My logs</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'collections:garbage_log_create' %}"><i class="bi bi-plus-circle me-2"></i> Log collection</a></li>
+          </ul>
+        {% elif user.role.name == 'landlord' %}
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><a class="nav-link" href="{% url 'properties:landlord_dashboard' %}"><i class="bi bi-house-door me-2"></i> My Properties</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'billing:my_bills' %}"><i class="bi bi-receipt me-2"></i> My Bills</a></li>
+            <li class="list-group-item"><a class="nav-link" href="{% url 'notifications:notification_list' %}"><i class="bi bi-bell me-2"></i> Notifications {% if gcms_unread_notifications %}<span class="badge bg-danger rounded-pill ms-1">{{ gcms_unread_notifications }}</span>{% endif %}</a></li>
+          </ul>
+        {% endif %}
+      {% else %}
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item"><a class="nav-link" href="{% url 'accounts:login' %}"><i class="bi bi-box-arrow-in-right me-2"></i> Sign in</a></li>
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+  <main class="container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show d-flex align-items-center" role="alert">
+          <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block breadcrumbs %}{% if breadcrumbs %}{% include "breadcrumbs.html" %}{% endif %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer-gcms">
+    <div class="container text-center">
+      <span aria-hidden="true">♻️</span> {{ GCMS_SITE_NAME }} · {{ GCMS_WARD }}, {{ GCMS_COUNTY }} 👌
+    </div>
+  </footer>
+  </div>
+
+  {% if user.is_authenticated and gcms_walkthrough_enabled %}
+  <script>
+    window.gcmsWalkthrough = {
+      showWelcome: {{ gcms_show_welcome_tour|yesno:"true,false" }},
+      showPageTip: {{ gcms_show_walkthrough_tip|yesno:"true,false" }},
+      urls: { markWelcomeDone: "{% url 'core:walkthrough_mark_welcome_done' %}", markPageSeen: "{% url 'core:walkthrough_mark_page_seen' %}" },
+      csrf: "{{ csrf_token }}"
+    };
+  </script>
+  <!-- In-app training: first-login welcome -->
+  <div class="modal fade" id="gcms-welcome-tour-modal" tabindex="-1" aria-labelledby="gcms-welcome-tour-title" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--gcms-radius); border: 1px solid var(--gcms-border);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title" id="gcms-welcome-tour-title"><i class="bi bi-lightbulb text-warning me-2"></i> Welcome to {{ GCMS_SITE_NAME }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <p class="mb-2">This system helps manage garbage collection for <strong>{{ GCMS_WARD }}</strong>. Use the menu to move between sections.</p>
+          <p class="text-muted small mb-0">When you open a section for the first time (e.g. Landlords, Billing), a short tip will explain what it does. You can turn these tips off in <strong>Settings</strong>.</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-primary" id="gcms-welcome-tour-done"><i class="bi bi-check-lg me-1"></i> Get started</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- In-app training: per-page tip -->
+  {% if gcms_walkthrough_tip %}{{ gcms_walkthrough_tip|json_script:"gcms-page-tip-json" }}{% endif %}
+  <div class="modal fade" id="gcms-page-tip-modal" tabindex="-1" aria-labelledby="gcms-page-tip-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--gcms-radius); border: 1px solid var(--gcms-border);">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title" id="gcms-page-tip-title"><i class="bi bi-info-circle text-primary me-2"></i> <span id="gcms-page-tip-title-text"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <p class="mb-0" id="gcms-page-tip-body"></p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-primary" id="gcms-page-tip-done"><i class="bi bi-check-lg me-1"></i> Got it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function() {
+      var KEY = 'gcms-theme';
+      var root = document.documentElement;
+      function getTheme() {
+        try { return localStorage.getItem(KEY); } catch (e) { return null; }
+      }
+      function setTheme(val) {
+        try { localStorage.setItem(KEY, val); } catch (e) {}
+        if (val === 'dark') root.setAttribute('data-theme', 'dark');
+        else root.removeAttribute('data-theme');
+      }
+      var saved = getTheme();
+      if (saved === 'dark') setTheme('dark');
+      var btn = document.getElementById('gcms-theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          var isDark = root.getAttribute('data-theme') === 'dark';
+          setTheme(isDark ? 'light' : 'dark');
+        });
+      }
+    })();
+
+    // In-app training: welcome and page-tip modals
+    (function() {
+      var w = window.gcmsWalkthrough;
+      if (!w) return;
+      var welcomeModalEl = document.getElementById('gcms-welcome-tour-modal');
+      var pageTipModalEl = document.getElementById('gcms-page-tip-modal');
+      function post(url, body, contentType) {
+        var csrf = w.csrf;
+        var opts = { method: 'POST', headers: { 'X-CSRFToken': csrf, 'Accept': 'application/json' } };
+        if (contentType === 'application/json') { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        else { opts.body = new URLSearchParams(body); }
+        return fetch(url, opts);
+      }
+      if (w.showWelcome && welcomeModalEl) {
+        var welcomeModal = new bootstrap.Modal(welcomeModalEl);
+        welcomeModal.show();
+        document.getElementById('gcms-welcome-tour-done').addEventListener('click', function() {
+          post(w.urls.markWelcomeDone, {}).then(function() { welcomeModal.hide(); });
+        });
+      }
+      if (w.showPageTip && pageTipModalEl) {
+        var tipEl = document.getElementById('gcms-page-tip-json');
+        var tip = tipEl ? JSON.parse(tipEl.textContent) : null;
+        if (tip) {
+          document.getElementById('gcms-page-tip-title-text').textContent = tip.title || '';
+          document.getElementById('gcms-page-tip-body').textContent = tip.body || '';
+          var pageTipModal = new bootstrap.Modal(pageTipModalEl);
+          pageTipModal.show();
+          document.getElementById('gcms-page-tip-done').addEventListener('click', function() {
+            post(w.urls.markPageSeen, { slug: tip.slug }, 'application/json').then(function() { pageTipModal.hide(); });
+          });
+        }
+      }
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Assignments{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-calendar-check text-success me-2"></i> Route assignments</h1>
+  <a href="{% url 'collections:assignment_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add assignment</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Route</th>
+            <th>Collector</th>
+            <th>Cart</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assignments %}
+            <tr>
+              <td class="fw-500">{{ a.date }}</td>
+              <td>{{ a.route.name }}</td>
+              <td>{{ a.collector.get_display_name }}</td>
+              <td>{{ a.cart|default:"—" }}</td>
+              <td>{% if a.is_completed %}<span class="badge bg-success">Completed</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
+              <td>
+                <a href="{% url 'collections:assignment_edit' a.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'collections:assignment_delete' a.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-calendar-x display-6 d-block mb-2 opacity-50"></i>
+                <p class="mb-0">No assignments yet. <a href="{% url 'collections:assignment_create' %}">Add one</a>.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

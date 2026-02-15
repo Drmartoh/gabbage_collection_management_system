@@ -1,0 +1,33 @@
+{% comment %}
+  Single-marker HERE map. Requires: lat, lng (numbers), optional: label, map_id (default here-map), height (default 280px).
+  Only renders if HERE_API_KEY is set and lat/lng are present.
+{% endcomment %}
+{% if HERE_API_KEY and lat and lng %}
+<div class="gcms-here-map-wrap rounded-3 overflow-hidden shadow-sm mb-3" style="height: {{ height|default:'280px' }};">
+  <div id="{{ map_id|default:'here-single-map' }}" class="w-100 h-100" style="min-height: 200px;"></div>
+</div>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+<script>
+(function() {
+  var apiKey = '{{ HERE_API_KEY|escapejs }}';
+  var lat = {{ lat }}, lng = {{ lng }};
+  var label = '{{ label|default:""|escapejs }}';
+  var mapId = '{{ map_id|default:"here-single-map"|escapejs }}';
+  var container = document.getElementById(mapId);
+  if (!container || !apiKey) return;
+  var platform = new H.service.Platform({ apikey: apiKey });
+  var defaultLayers = platform.createDefaultLayers();
+  var map = new H.Map(container, defaultLayers.vector.normal.map, {
+    center: { lat: lat, lng: lng },
+    zoom: 16
+  });
+  new H.mapevents.MapEvents(map);
+  var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+  var marker = new H.map.Marker({ lat: lat, lng: lng });
+  map.addObject(marker);
+  window.addEventListener('resize', function() { map.getViewPort().resize(); });
+})();
+</script>
+{% endif %}

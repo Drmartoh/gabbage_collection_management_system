@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-gear text-primary me-2"></i> Settings</h1>
+  <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+<p class="text-muted small mb-4">GCMS configuration. In-app training can be toggled below; other values are read from <code>.env</code> or <code>gcms/settings.py</code>. For users and roles use Django Admin.</p>
+<div class="row g-3">
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-lightbulb me-2"></i> In-app training</div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">When enabled, new users see a welcome message on first login and a short tip the first time they open each section (e.g. Landlords, Billing).</p>
+        <form method="post" action="{% url 'core:gcms_settings' %}" class="d-flex align-items-center gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="walkthrough_enabled" value="false">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="walkthrough_enabled" id="id_walkthrough_enabled" value="true" {% if walkthrough_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="id_walkthrough_enabled">Enable in-app training &amp; walkthrough</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-building me-2"></i> Site</div>
+      <div class="card-body">
+        <p class="mb-1"><strong>Site name</strong><br>{{ site_name }}</p>
+        <p class="mb-1"><strong>Ward</strong><br>{{ ward }}</p>
+        <p class="mb-0"><strong>County</strong><br>{{ county }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-currency-exchange me-2"></i> Standard fee (billing)</div>
+      <div class="card-body">
+        <p class="small text-muted mb-2">Default monthly rate per tenant (KES). You can override this for individual tenants when adding or editing a tenant.</p>
+        <form method="post" action="{% url 'core:gcms_settings' %}" class="d-flex align-items-center gap-2 flex-wrap">
+          {% csrf_token %}
+          <label for="id_rate_per_tenant" class="form-label mb-0">KES</label>
+          <input type="number" name="rate_per_tenant" id="id_rate_per_tenant" value="{{ rate_per_tenant }}" min="0" step="1" class="form-control" style="max-width: 120px;">
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-map me-2"></i> HERE Maps</div>
+      <div class="card-body">
+        <p class="mb-0">
+          {% if here_configured %}<span class="badge bg-success">Configured</span> Maps, geocoding & routing on.{% else %}<span class="badge bg-secondary">Not set</span> Set <code>HERE_API_KEY</code> in .env.{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-chat-dots me-2"></i> SMS</div>
+      <div class="card-body">
+        <p class="mb-0">
+          {% if sms_configured %}<span class="badge bg-success">Configured</span> Payment SMS can be sent.{% else %}<span class="badge bg-secondary">Not set</span> Set <code>GCMS_SMS_API_URL</code> and <code>GCMS_SMS_API_KEY</code> in .env.{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-clock me-2"></i> Session</div>
+      <div class="card-body">
+        <p class="mb-0"><strong>Session timeout</strong><br>{{ session_hours }} hour{{ session_hours|pluralize }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-sliders me-2"></i> Full admin</div>
+      <div class="card-body">
+        <a href="/admin/" class="btn btn-outline-primary" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i> Django Admin</a>
+        <p class="text-muted small mt-2 mb-0">Users, roles, and raw data management.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
